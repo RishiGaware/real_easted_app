@@ -118,6 +118,22 @@ class _EditMeetingPageState extends State<EditMeetingPage> {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
       initialTime: _selectedStartTime ?? TimeOfDay.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            timePickerTheme: TimePickerThemeData(
+              hourMinuteTextStyle: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+              helpTextStyle: const TextStyle(fontSize: 12),
+            ),
+          ),
+          child: MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: const TextScaler.linear(0.8),
+            ),
+            child: child!,
+          ),
+        );
+      },
     );
     if (picked != null && picked != _selectedStartTime) {
       setState(() {
@@ -130,6 +146,22 @@ class _EditMeetingPageState extends State<EditMeetingPage> {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
       initialTime: _selectedEndTime ?? TimeOfDay.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            timePickerTheme: TimePickerThemeData(
+              hourMinuteTextStyle: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+              helpTextStyle: const TextStyle(fontSize: 12),
+            ),
+          ),
+          child: MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              textScaler: const TextScaler.linear(0.8),
+            ),
+            child: child!,
+          ),
+        );
+      },
     );
     if (picked != null && picked != _selectedEndTime) {
       setState(() {

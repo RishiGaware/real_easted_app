@@ -36,8 +36,8 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
 
   List<MeetingSchedule> _meetings = [];
   List<MeetingSchedule> _filteredMeetings = [];
-  Map<String, UsersModel> _userCache = {};
-  Map<String, PropertyModel> _propertyCache = {};
+  Map<String, Map<String, dynamic>> _userCache = {};
+  Map<String, Map<String, dynamic>> _propertyCache = {};
   Map<String, MeetingScheduleStatusModel> _statusCache = {};
   bool _isLoading = true;
   String? _error;
@@ -459,27 +459,55 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
 
   Future<void> _loadAssociatedData() async {
     try {
-      // Load user data
-      final usersResponse = await _userController.getAllUsers();
-      if (usersResponse['statusCode'] == 200 && usersResponse['data'] != null) {
-        final users = usersResponse['data'] as List<dynamic>;
-        for (final userData in users) {
-          final user = UsersModel.fromJson(userData);
-          _userCache[user.id] = user;
+      final Set<String> userIdsToFetch = {};
+      final Set<String> propertyIdsToFetch = {};
+
+      for (final meeting in _meetings) {
+        if (meeting.customerId.isNotEmpty) {
+          if (meeting.customer != null) {
+            _userCache[meeting.customerId] = meeting.customer!;
+          } else if (!_userCache.containsKey(meeting.customerId)) {
+            userIdsToFetch.add(meeting.customerId);
+          }
+        }
+
+        if (meeting.scheduledByUserId.isNotEmpty) {
+          if (meeting.scheduledByUser != null) {
+            _userCache[meeting.scheduledByUserId] = meeting.scheduledByUser!;
+          } else if (!_userCache.containsKey(meeting.scheduledByUserId)) {
+            userIdsToFetch.add(meeting.scheduledByUserId);
+          }
+        }
+
+        if (meeting.propertyId != null && meeting.propertyId!.isNotEmpty) {
+          if (meeting.propertyDetails != null) {
+            _propertyCache[meeting.propertyId!] = meeting.propertyDetails!;
+          } else if (!_propertyCache.containsKey(meeting.propertyId!)) {
+            propertyIdsToFetch.add(meeting.propertyId!);
+          }
         }
       }
 
-      // Load property data
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token') ?? '';
-      final propertiesResponse = await _propertyService.getAllProperties(token);
-      if (propertiesResponse['statusCode'] == 200 &&
-          propertiesResponse['data'] != null) {
-        final properties = propertiesResponse['data'] as List<dynamic>;
-        for (final propertyData in properties) {
-          final property = PropertyModel.fromJson(propertyData);
-          _propertyCache[property.id] = property;
-        }
+      final List<Future<void>> futures = [];
+
+      for (final userId in userIdsToFetch) {
+        futures.add(_meetingService.getUserDetails(userId).then((userDetails) {
+          if (userDetails != null) {
+            _userCache[userId] = userDetails;
+          }
+        }));
+      }
+
+      for (final propertyId in propertyIdsToFetch) {
+        futures.add(_meetingService.getPropertyDetails(propertyId).then((propertyDetails) {
+          if (propertyDetails != null) {
+            _propertyCache[propertyId] = propertyDetails;
+          }
+        }));
+      }
+
+      if (futures.isNotEmpty) {
+        await Future.wait(futures);
       }
 
       // Load meeting status data
@@ -501,7 +529,9 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
   String _getUserName(String userId) {
     final user = _userCache[userId];
     if (user != null) {
-      return '${user.firstName} ${user.lastName}'.trim();
+      final firstName = user['firstName'] ?? '';
+      final lastName = user['lastName'] ?? '';
+      return '$firstName $lastName'.trim();
     }
     return 'User $userId';
   }
@@ -511,7 +541,7 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
 
     final property = _propertyCache[propertyId];
     if (property != null) {
-      return property.name;
+      return property['name'] ?? 'Property $propertyId';
     }
     return 'Property $propertyId';
   }

@@ -137,10 +137,14 @@ class _MeetingDetailsPageState extends State<MeetingDetailsPage>
               .toList();
 
           // Find the status by ID
+          final String statusId = widget.meeting.status is Map 
+              ? (widget.meeting.status['_id'] ?? widget.meeting.status['id'] ?? '')
+              : widget.meeting.status.toString();
+              
           final status = statuses.firstWhere(
-            (s) => s.id == widget.meeting.status.toString(),
+            (s) => s.id == statusId,
             orElse: () => MeetingScheduleStatusModel(
-              id: widget.meeting.status.toString(),
+              id: statusId,
               name: 'Unknown',
               description: 'Unknown status',
               statusCode: 0,

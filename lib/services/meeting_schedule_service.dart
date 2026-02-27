@@ -28,9 +28,19 @@ class MeetingScheduleService {
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
         final List<dynamic> meetingsData = data['data'] ?? [];
-        return meetingsData
+        final List<MeetingSchedule> meetings = meetingsData
             .map((json) => MeetingSchedule.fromJson(json))
             .toList();
+        
+        meetings.sort((a, b) {
+          if (a.createdAt == null || b.createdAt == null) return 0;
+          final dateA = DateTime.tryParse(a.createdAt!);
+          final dateB = DateTime.tryParse(b.createdAt!);
+          if (dateA == null || dateB == null) return 0;
+          return dateB.compareTo(dateA);
+        });
+
+        return meetings;
       } else {
         throw Exception('Failed to load meetings: ${response.statusCode}');
       }
@@ -70,9 +80,19 @@ class MeetingScheduleService {
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
         final List<dynamic> meetingsData = data['data'] ?? [];
-        return meetingsData
+        final List<MeetingSchedule> meetings = meetingsData
             .map((json) => MeetingSchedule.fromJson(json))
             .toList();
+
+        meetings.sort((a, b) {
+          if (a.createdAt == null || b.createdAt == null) return 0;
+          final dateA = DateTime.tryParse(a.createdAt!);
+          final dateB = DateTime.tryParse(b.createdAt!);
+          if (dateA == null || dateB == null) return 0;
+          return dateB.compareTo(dateA);
+        });
+
+        return meetings;
       } else {
         throw Exception('Failed to load my meetings: ${response.statusCode}');
       }
@@ -233,8 +253,12 @@ class MeetingScheduleService {
     }
   }
 
+  String? _cachedMissedStatusId;
+
   // Get the missed status ID from the backend
   Future<String?> _getMissedStatusId() async {
+    if (_cachedMissedStatusId != null) return _cachedMissedStatusId;
+    
     try {
       final token = await _getToken();
       if (token == null) return null;
@@ -254,7 +278,8 @@ class MeetingScheduleService {
         // Find the missed status
         for (final status in statuses) {
           if (status['name']?.toString().toLowerCase() == 'missed') {
-            return status['_id'] ?? status['id'];
+            _cachedMissedStatusId = status['_id'] ?? status['id'];
+            return _cachedMissedStatusId;
           }
         }
       }
@@ -266,11 +291,17 @@ class MeetingScheduleService {
   }
 
   // Check and update all meetings for missed status
-  Future<void> checkAndUpdateMissedMeetings() async {
+  Future<void> checkAndUpdateMissedMeetings({List<MeetingSchedule>? meetings}) async {
     try {
-      final meetings = await getAllMeetings();
-      for (final meeting in meetings) {
-        await updateMeetingStatusIfMissed(meeting);
+      final meetingsToCheck = meetings ?? await getAllMeetings();
+      final List<Future<void>> updateTasks = [];
+      
+      for (final meeting in meetingsToCheck) {
+        updateTasks.add(updateMeetingStatusIfMissed(meeting));
+      }
+      
+      if (updateTasks.isNotEmpty) {
+        await Future.wait(updateTasks);
       }
     } catch (e) {
       // Handle error silently

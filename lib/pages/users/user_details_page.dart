@@ -7,6 +7,8 @@ import 'package:inhabit_realties/models/auth/UsersModel.dart';
 import 'package:inhabit_realties/models/role/RolesModel.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:inhabit_realties/controllers/address/userAddressController.dart';
+import 'package:inhabit_realties/models/address/UserAddressModel.dart';
 
 class UserDetailsPage extends StatefulWidget {
   final String userId;
@@ -21,9 +23,11 @@ class _UserDetailsPageState extends State<UserDetailsPage>
     with TickerProviderStateMixin {
   final UserController _userController = UserController();
   final RoleController _roleController = RoleController();
+  final UserAddressController _userAddressController = UserAddressController();
 
   UsersModel? _user;
   RolesModel? _role;
+  List<UserAddressModel> _addresses = [];
   bool _isLoading = true;
   String? _error;
 
@@ -93,6 +97,24 @@ class _UserDetailsPageState extends State<UserDetailsPage>
           } catch (e) {
             // Error loading role
           }
+        }
+
+        // Load address data
+        try {
+          final addressResponse = await _userAddressController.getUserAddressByUserId(widget.userId);
+          if (addressResponse['statusCode'] == 200 && addressResponse['data'] != null) {
+            if (addressResponse['data'] is List) {
+              _addresses = (addressResponse['data'] as List)
+                  .map((item) => UserAddressModel.fromJson(item))
+                  .where((address) => address.published)
+                  .toList();
+            } else {
+              final address = UserAddressModel.fromJson(addressResponse['data']);
+              _addresses = address.published ? [address] : [];
+            }
+          }
+        } catch (e) {
+          // Error loading addresses
         }
       } else {
         throw Exception('Failed to load user data');
@@ -580,7 +602,7 @@ class _UserDetailsPageState extends State<UserDetailsPage>
                                   ),
                                 ),
 
-                              // Account Status Card
+                                // Account Status Card
                               _buildInfoCard(
                                 title: 'Account Status',
                                 icon: CupertinoIcons.checkmark_shield,
@@ -608,6 +630,29 @@ class _UserDetailsPageState extends State<UserDetailsPage>
                                   ],
                                 ),
                               ),
+
+                              // Address Card
+                              if (_addresses.isNotEmpty) ...[
+                                for (var address in _addresses)
+                                  _buildInfoCard(
+                                    title: 'Address Information',
+                                    icon: CupertinoIcons.location_solid,
+                                    color: AppColors.brandPrimary,
+                                    content: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        _buildInfoRow('Full Address', address.fullAddress.isNotEmpty ? address.fullAddress : "${address.address.street}, ${address.address.city}, ${address.address.zipOrPinCode}"),
+                                      ],
+                                    ),
+                                  ),
+                              ] else ...[
+                                _buildInfoCard(
+                                  title: 'Address Information',
+                                  icon: CupertinoIcons.location,
+                                  color: Colors.grey,
+                                  content: Text('No address added.', style: TextStyle(color: textColor.withOpacity(0.7), fontSize: 14)),
+                                ),
+                              ],
 
                               // Documents Card (placeholder for future functionality)
                               _buildInfoCard(

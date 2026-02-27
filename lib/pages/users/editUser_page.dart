@@ -14,6 +14,8 @@ import 'package:inhabit_realties/pages/widgets/appSnackBar.dart';
 import 'package:inhabit_realties/pages/widgets/formTextField.dart';
 import 'package:inhabit_realties/providers/register_page_provider.dart';
 import 'package:inhabit_realties/pages/users/add_user_address_page.dart';
+import 'package:inhabit_realties/controllers/address/userAddressController.dart';
+import 'package:inhabit_realties/models/address/UserAddressModel.dart';
 
 class EditUserPage extends StatefulWidget {
   const EditUserPage({super.key});
@@ -64,6 +66,8 @@ class _EditUserPageState extends State<EditUserPage> {
   String? selectedRoleId;
   bool selectedPublishedOrNot = true;
   List<RolesModel> roles = [];
+  List<UserAddressModel> addresses = [];
+  final UserAddressController _userAddressController = UserAddressController();
   bool isLoading = false;
   bool _initialized = false;
 
@@ -80,7 +84,96 @@ class _EditUserPageState extends State<EditUserPage> {
   Future<void> _loadInitialData() async {
     setState(() => isLoading = true);
     await Future.wait([getAllRoles(), setDetails()]);
+    if (user != null) {
+      await getUserAddresses(user!.id);
+    }
     setState(() => isLoading = false);
+  }
+
+  Future<void> getUserAddresses(String userId) async {
+    try {
+      print('Fetching addresses for userId: $userId');
+      final response = await _userAddressController.getUserAddressByUserId(userId);
+      print('Address API response: $response');
+      if (response['statusCode'] == 200 && response['data'] != null) {
+        if (mounted) {
+          setState(() {
+            if (response['data'] is List) {
+              addresses = (response['data'] as List)
+                  .map((item) => UserAddressModel.fromJson(item))
+                  .where((address) => address.published)
+                  .toList();
+            } else {
+              final address = UserAddressModel.fromJson(response['data']);
+              addresses = address.published ? [address] : [];
+            }
+            print('Parsed addresses count: ${addresses.length}');
+          });
+        }
+      }
+    } catch (e) {
+      print('Error fetching addresses: $e');
+    }
+  }
+
+  Future<void> _deleteAddress(String addressId) async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Address'),
+        content: const Text('Are you sure you want to delete this address?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => isLoading = true);
+    try {
+      final response = await _userAddressController.deleteUserAddress(addressId);
+      if (response['statusCode'] == 200 || response['statusCode'] == 201) {
+        if (mounted) {
+          AppSnackBar.showSnackBar(
+            context,
+            'Success',
+            'Address deleted successfully',
+            ContentType.success,
+          );
+          await getUserAddresses(user!.id);
+        }
+      } else {
+        if (mounted) {
+          AppSnackBar.showSnackBar(
+            context,
+            'Error',
+            response['message'] ?? 'Failed to delete address',
+            ContentType.failure,
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        AppSnackBar.showSnackBar(
+          context,
+          'Error',
+          'An error occurred',
+          ContentType.failure,
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => isLoading = false);
+      }
+    }
   }
 
   Future<void> getAllRoles() async {
@@ -329,6 +422,76 @@ class _EditUserPageState extends State<EditUserPage> {
     );
   }
 
+  Widget _buildAddressInfoSection() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDark ? AppColors.darkWhiteText : AppColors.lightDarkText;
+
+    return Padding(
+      padding: _sectionPadding,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionHeader('Address Information'),
+          if (addresses.isEmpty)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 20),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkCardBackground : AppColors.lightCardBackground,
+                borderRadius: _borderRadius,
+                border: Border.all(color: AppColors.greyColor.withOpacity(0.3)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(CupertinoIcons.location, color: Colors.grey),
+                  SizedBox(width: 10),
+                  Text('No address added.'),
+                ],
+              ),
+            )
+          else
+            ...addresses.map((address) {
+              return Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 20),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkCardBackground : AppColors.lightCardBackground,
+                  borderRadius: _borderRadius,
+                  border: Border.all(color: AppColors.greyColor.withOpacity(0.3)),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(CupertinoIcons.location_solid, color: AppColors.brandPrimary),
+                    const SizedBox(width: 15),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            address.fullAddress.isNotEmpty
+                                ? address.fullAddress
+                                : "${address.address.street}, ${address.address.city}, ${address.address.zipOrPinCode}",
+                            style: TextStyle(fontSize: 14, color: textColor),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(CupertinoIcons.delete, color: Colors.red, size: 20),
+                      onPressed: () => _deleteAddress(address.id),
+                      tooltip: 'Delete Address',
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSecuritySection() {
     return Padding(
       padding: _sectionPadding,
@@ -493,6 +656,7 @@ class _EditUserPageState extends State<EditUserPage> {
                       'Address added successfully',
                       ContentType.success,
                     );
+                    await getUserAddresses(user!.id);
                   }
                 },
                 child: Text(
@@ -532,6 +696,7 @@ class _EditUserPageState extends State<EditUserPage> {
                     children: [
                       _buildBasicInfoSection(),
                       _buildPersonalInfoSection(),
+                      _buildAddressInfoSection(),
                       _buildSecuritySection(),
                       _buildSubmitButton(),
                     ],

@@ -159,6 +159,19 @@ class _UsersPageState extends State<UsersPage>
         final data = response['data'];
         if (data.isNotEmpty) {
           setState(() {
+            // Re-initialize roles to prevent duplicates on refresh
+            roles = [
+              RolesModel(
+                id: '0',
+                name: 'ALL',
+                description: 'All types',
+                createdByUserId: '0',
+                updatedByUserId: '0',
+                published: true,
+                createdAt: DateTime.now(),
+                updatedAt: DateTime.now(),
+              )
+            ];
             roles.addAll(
               data
                   .map<RolesModel>((item) => RolesModel.fromJson(item))

@@ -107,7 +107,7 @@ class _MeetingScheduleAdminPageState extends State<MeetingScheduleAdminPage>
       final meetings = await _meetingService.getAllMeetings();
 
       // Check and update missed meetings
-      await _meetingService.checkAndUpdateMissedMeetings();
+      await _meetingService.checkAndUpdateMissedMeetings(meetings: meetings);
 
       // Load associated data for all meetings
       await _loadAssociatedData(meetings);
@@ -128,38 +128,57 @@ class _MeetingScheduleAdminPageState extends State<MeetingScheduleAdminPage>
   }
 
   Future<void> _loadAssociatedData(List<MeetingSchedule> meetings) async {
-    // Load user and property details for all meetings
+    final Set<String> userIdsToFetch = {};
+    final Set<String> propertyIdsToFetch = {};
+
+    // Collect all unique IDs that need fetching, and use populated data if available
     for (final meeting in meetings) {
-      // Load customer details
-      if (meeting.customerId.isNotEmpty &&
-          !_userCache.containsKey(meeting.customerId)) {
-        final userDetails =
-            await _meetingService.getUserDetails(meeting.customerId);
-        if (userDetails != null) {
-          _userCache[meeting.customerId] = userDetails;
+      if (meeting.customerId.isNotEmpty) {
+        if (meeting.customer != null) {
+          _userCache[meeting.customerId] = meeting.customer!;
+        } else if (!_userCache.containsKey(meeting.customerId)) {
+          userIdsToFetch.add(meeting.customerId);
         }
       }
 
-      // Load scheduled by user details
-      if (meeting.scheduledByUserId.isNotEmpty &&
-          !_userCache.containsKey(meeting.scheduledByUserId)) {
-        final userDetails =
-            await _meetingService.getUserDetails(meeting.scheduledByUserId);
-        if (userDetails != null) {
-          _userCache[meeting.scheduledByUserId] = userDetails;
+      if (meeting.scheduledByUserId.isNotEmpty) {
+        if (meeting.scheduledByUser != null) {
+          _userCache[meeting.scheduledByUserId] = meeting.scheduledByUser!;
+        } else if (!_userCache.containsKey(meeting.scheduledByUserId)) {
+          userIdsToFetch.add(meeting.scheduledByUserId);
         }
       }
 
-      // Load property details
-      if (meeting.propertyId != null &&
-          meeting.propertyId!.isNotEmpty &&
-          !_propertyCache.containsKey(meeting.propertyId!)) {
-        final propertyDetails =
-            await _meetingService.getPropertyDetails(meeting.propertyId!);
+      if (meeting.propertyId != null && meeting.propertyId!.isNotEmpty) {
+        if (meeting.propertyDetails != null) {
+          _propertyCache[meeting.propertyId!] = meeting.propertyDetails!;
+        } else if (!_propertyCache.containsKey(meeting.propertyId!)) {
+          propertyIdsToFetch.add(meeting.propertyId!);
+        }
+      }
+    }
+
+    // Fetch them concurrently
+    final List<Future<void>> futures = [];
+
+    for (final userId in userIdsToFetch) {
+      futures.add(_meetingService.getUserDetails(userId).then((userDetails) {
+        if (userDetails != null) {
+          _userCache[userId] = userDetails;
+        }
+      }));
+    }
+
+    for (final propertyId in propertyIdsToFetch) {
+      futures.add(_meetingService.getPropertyDetails(propertyId).then((propertyDetails) {
         if (propertyDetails != null) {
-          _propertyCache[meeting.propertyId!] = propertyDetails;
+          _propertyCache[propertyId] = propertyDetails;
         }
-      }
+      }));
+    }
+
+    if (futures.isNotEmpty) {
+      await Future.wait(futures);
     }
 
     // Notify UI to rebuild with loaded data

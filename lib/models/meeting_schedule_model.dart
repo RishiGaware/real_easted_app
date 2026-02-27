@@ -10,6 +10,9 @@ class MeetingSchedule {
   final String scheduledByUserId;
   final String customerId;
   final String? propertyId;
+  final Map<String, dynamic>? scheduledByUser;
+  final Map<String, dynamic>? customer;
+  final Map<String, dynamic>? propertyDetails;
   final String notes;
   final String createdByUserId;
   final String updatedByUserId;
@@ -29,6 +32,9 @@ class MeetingSchedule {
     required this.scheduledByUserId,
     required this.customerId,
     this.propertyId,
+    this.scheduledByUser,
+    this.customer,
+    this.propertyDetails,
     required this.notes,
     required this.createdByUserId,
     required this.updatedByUserId,
@@ -58,6 +64,9 @@ class MeetingSchedule {
       propertyId: json['propertyId'] is Map
           ? (json['propertyId']['_id'] ?? json['propertyId']['id'] ?? '')
           : json['propertyId'],
+      scheduledByUser: json['scheduledByUserId'] is Map ? json['scheduledByUserId'] : null,
+      customer: json['customerId'] is Map ? json['customerId'] : null,
+      propertyDetails: json['propertyId'] is Map ? json['propertyId'] : null,
       notes: json['notes'] ?? '',
       createdByUserId: json['createdByUserId'] ?? '',
       updatedByUserId: json['updatedByUserId'] ?? '',
@@ -91,7 +100,7 @@ class MeetingSchedule {
 
   // Helper method to get status name
   String getStatusName() {
-    if (status is Map<String, dynamic>) {
+    if (status is Map) {
       return status['name'] ?? '';
     }
     return status.toString();
