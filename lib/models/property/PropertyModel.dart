@@ -39,15 +39,25 @@ class PropertyModel {
   /// Deserialize from JSON
   factory PropertyModel.fromJson(Map<String, dynamic> json) {
     try {
+      // Handle propertyTypeId parsing
+      String parsedPropertyTypeId = '';
+      if (json['propertyTypeId'] != null) {
+        if (json['propertyTypeId'] is String) {
+          parsedPropertyTypeId = json['propertyTypeId'];
+        } else if (json['propertyTypeId'] is Map) {
+          parsedPropertyTypeId = json['propertyTypeId']['_id']?.toString() ?? '';
+        }
+      }
+      
       return PropertyModel(
         id: json['_id']?.toString() ?? '',
         name: json['name']?.toString() ?? '',
-        propertyTypeId: json['propertyTypeId']?.toString() ?? '',
+        propertyTypeId: parsedPropertyTypeId,
         description: json['description']?.toString() ?? '',
         propertyAddress: Address.fromJson(json['propertyAddress'] ?? {}),
         owner: json['owner']?.toString() ?? '',
         price: (json['price'] ?? 0).toDouble(),
-        propertyStatus: json['propertyStatus']?.toString() ?? '',
+        propertyStatus: json['propertyStatus']?.toString().toUpperCase() ?? '',
         features: Features.fromJson(json['features'] ?? {}),
         listedDate: _parseDateTime(json['listedDate']),
         createdByUserId: json['createdByUserId']?.toString() ?? '',

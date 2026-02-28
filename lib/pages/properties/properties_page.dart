@@ -697,49 +697,70 @@ class _PropertyPageState extends State<PropertiesPage>
           : RefreshIndicator(
               onRefresh: _loadData,
               child: Column(
-                children: [  
+                children: [
                   //_buildHeader(),
                   _buildPropertyTypesList(),
                   _buildPropertyStatusFilter(),
                   _buildSearchBar(),
                   const SizedBox(height: 4),
-                  if (filteredProperties.isEmpty)
+                  if (isPageLoading)
+                    const Expanded(
+                      child: Center(
+                        child: CircularProgressIndicator(color: AppColors.brandPrimary),
+                      ),
+                    )
+                  else if (filteredProperties.isEmpty)
                     Expanded(
                       child: Center(
                         child: Text(
                           'No properties found',
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyLarge
-                              ?.copyWith(color: AppColors.greyColor),
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                color: AppColors.greyColor,
+                              ),
                         ),
                       ),
                     )
                   else
                     Expanded(
-                      child: CustomScrollView(
-                        controller: _scrollController,
-                        physics: const BouncingScrollPhysics(),
-                        slivers: [
-                          SliverPadding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                            child: Text(
+                              'Showing ${filteredProperties.length} propert${filteredProperties.length == 1 ? 'y' : 'ies'}',
+                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: AppColors.greyColor,
+                                    fontWeight: FontWeight.w600,
+                                  ),
                             ),
-                            sliver: SliverList(
-                              delegate: SliverChildBuilderDelegate(
-                                (context, index) {
-                                  // Show loading indicator at the bottom
+                          ),
+                          Expanded(
+                            child: RefreshIndicator(
+                              color: AppColors.brandPrimary,
+                              onRefresh: _loadData,
+                              child: ListView.builder(
+                                controller: _scrollController,
+                                padding: const EdgeInsets.only(
+                                  left: 20,
+                                  right: 20,
+                                  bottom: 100,
+                                  top: 8,
+                                ),
+                                itemCount: filteredProperties.length + (isLoadingMore ? 1 : 0),
+                                itemBuilder: (context, index) {
                                   if (index == filteredProperties.length) {
-                                    return _buildLoadingIndicator();
+                                    return const Padding(
+                                      padding: EdgeInsets.symmetric(vertical: 20),
+                                      child: Center(
+                                        child: CircularProgressIndicator(
+                                          color: AppColors.brandPrimary,
+                                        ),
+                                      ),
+                                    );
                                   }
-
-                                  return Padding(
-                                    padding: const EdgeInsets.only(bottom: 20),
-                                    child: _buildPropertyCard(context, index),
-                                  );
+                                  return _buildPropertyCard(context, index);
                                 },
-                                childCount: filteredProperties.length +
-                                    (hasMoreData ? 1 : 0),
                               ),
                             ),
                           ),
