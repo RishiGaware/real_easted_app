@@ -47,7 +47,14 @@ import 'package:inhabit_realties/pages/profile/booking_details_page.dart';
 import 'package:inhabit_realties/pages/booking/all_purchase_bookings_page.dart';
 import 'package:inhabit_realties/pages/booking/all_rental_bookings_page.dart';
 
-void main() {
+import 'package:inhabit_realties/services/notification/local_notification_service.dart';
+import 'package:inhabit_realties/services/notification/background_service.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await LocalNotificationService.initialize();
+  await LocalNotificationService.requestPermissions();
+  await BackgroundNotificationService.initializeService();
   runApp(const MainApp());
 }
 

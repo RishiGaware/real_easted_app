@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../models/notification/NotificationModel.dart';
 import '../../services/notification/notificationService.dart';
+import '../../services/notification/local_notification_service.dart';
+import 'dart:async';
 
 class NotificationController extends ChangeNotifier {
   List<NotificationModel> _notifications = [];
@@ -10,13 +12,24 @@ class NotificationController extends ChangeNotifier {
   int _currentPage = 1;
   bool _hasMorePages = true;
 
+  Timer? _pollingTimer;
+  final Set<String> _alertedNotificationIds = {};
+
   // Constructor to initialize data
   NotificationController() {
     // Load initial data
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await LocalNotificationService.initialize();
       getNotifications();
       getUnreadCount();
+      _startBackgroundPolling();
     });
+  }
+
+  @override
+  void dispose() {
+    _pollingTimer?.cancel();
+    super.dispose();
   }
 
   // Getters
@@ -65,6 +78,11 @@ class NotificationController extends ChangeNotifier {
         final List<NotificationModel> newNotifications = notificationsData
             .map((json) => NotificationModel.fromJson(json))
             .toList();
+
+        // Prevent spam initial popups
+        for (var n in newNotifications) {
+          _alertedNotificationIds.add(n.id);
+        }
 
         for (int i = 0; i < newNotifications.length; i++) {}
 
@@ -120,6 +138,51 @@ class NotificationController extends ChangeNotifier {
       _setError('Error loading unread notifications: $e');
     } finally {
       _setLoading(false);
+    }
+  }
+
+  // Background polling for new notifications
+  void _startBackgroundPolling() {
+    // Poll every 10 seconds for new notifications
+    _pollingTimer = Timer.periodic(const Duration(seconds: 10), (timer) async {
+      _silentFetchNewNotifications();
+    });
+  }
+
+  Future<void> _silentFetchNewNotifications() async {
+    try {
+      final result = await NotificationService.getUserNotifications(
+        page: 1,
+        limit: 10, // Just check the latest ones
+        unreadOnly: true,
+      );
+
+      if (result['statusCode'] == 200) {
+        final List<dynamic> notificationsData = result['data'] ?? [];
+        final newSilentNotifications = notificationsData
+            .map((json) => NotificationModel.fromJson(json))
+            .toList();
+
+        bool hasNewAlerts = false;
+        for (var notification in newSilentNotifications) {
+          if (!_alertedNotificationIds.contains(notification.id)) {
+            _alertedNotificationIds.add(notification.id);
+            hasNewAlerts = true;
+            
+            // Add the new notification to the main list if not there
+            if (_notifications.indexWhere((n) => n.id == notification.id) == -1) {
+              _notifications.insert(0, notification);
+            }
+          }
+        }
+
+        if (hasNewAlerts) {
+          // Update the unread count in UI
+          getUnreadCount();
+        }
+      }
+    } catch (e) {
+      // Background error ignored to avoid spamming the user
     }
   }
 

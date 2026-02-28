@@ -46,7 +46,7 @@ class NotificationService {
         'unreadOnly': unreadOnly.toString(),
       };
 
-      final uri = Uri.parse('${ApiUrls.getUserNotifications}$userId')
+      final uri = Uri.parse(ApiUrls.getUserNotifications)
           .replace(queryParameters: queryParams);
 
       final response = await http.get(
@@ -157,7 +157,7 @@ class NotificationService {
       }
 
       final response = await http.put(
-        Uri.parse('${ApiUrls.markAllNotificationsAsRead}$userId'),
+        Uri.parse(ApiUrls.markAllNotificationsAsRead),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -226,7 +226,7 @@ class NotificationService {
       }
 
       final response = await http.get(
-        Uri.parse('${ApiUrls.getUnreadCount}$userId'),
+        Uri.parse(ApiUrls.getUnreadCount),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
