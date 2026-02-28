@@ -17,19 +17,6 @@ class MainLayout extends StatefulWidget {
 
 class _MainLayoutState extends State<MainLayout> {
   int _currentIndex = 0;
-  late final List<Widget> _screens;
-
-  @override
-  void initState() {
-    super.initState();
-    _screens = [
-      HomePage(onToggleTheme: () => widget.onToggleTheme?.call()),
-      const PropertiesPage(),
-      const LeadsPage(),
-      const MeetingScheduleUserPage(),
-      const ProfilePage(),
-    ];
-  }
 
   void _onTabTapped(int index) {
     setState(() {
@@ -40,7 +27,19 @@ class _MainLayoutState extends State<MainLayout> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(index: _currentIndex, children: _screens),
+      body: IndexedStack(
+        index: _currentIndex, 
+        children: [
+          HomePage(
+            onToggleTheme: () => widget.onToggleTheme?.call(),
+            onSwitchTab: _onTabTapped,
+          ),
+          const PropertiesPage(),
+          const LeadsPage(),
+          const MeetingScheduleUserPage(),
+          const ProfilePage(),
+        ]
+      ),
       bottomNavigationBar: AppBottomNav(
         currentIndex: _currentIndex,
         onTap: _onTabTapped,

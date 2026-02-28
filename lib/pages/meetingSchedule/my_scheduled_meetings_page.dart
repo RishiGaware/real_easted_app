@@ -21,8 +21,14 @@ class _MyScheduledMeetingsPageState extends State<MyScheduledMeetingsPage>
     with TickerProviderStateMixin {
   final MeetingScheduleService _meetingService = MeetingScheduleService();
   List<MeetingSchedule> _meetings = [];
+  List<MeetingSchedule> _filteredMeetings = [];
   bool _isLoading = true;
   String? _error;
+
+  // Search and Sort
+  String _searchQuery = '';
+  // 'DESC' = Newest first (default), 'ASC' = Oldest first
+  String _sortOrder = 'DESC';
 
   // Cache for user and property details
   Map<String, Map<String, dynamic>> _userCache = {};
@@ -148,16 +154,15 @@ class _MyScheduledMeetingsPageState extends State<MyScheduledMeetingsPage>
           .where((meeting) => meeting.scheduledByUserId == currentUserId)
           .toList();
 
-      // Apply meeting type filtering
-      final filteredMeetings = _filterMeetingsByType(myScheduledMeetings);
-
       // Load associated data for all meetings
       await _loadAssociatedData(myScheduledMeetings);
 
       setState(() {
-        _meetings = filteredMeetings;
+        _meetings = myScheduledMeetings;
         _isLoading = false;
       });
+
+      _applyFilters();
 
       // Start animation after data is loaded
       _animationController.forward();
@@ -226,48 +231,80 @@ class _MyScheduledMeetingsPageState extends State<MyScheduledMeetingsPage>
     }
   }
 
-  List<MeetingSchedule> _filterMeetingsByType(List<MeetingSchedule> meetings) {
-    if (_selectedTypeIndex == 0) {
-      // ALL - return all meetings
-      return meetings;
-    }
+  void _applyFilters() {
+    setState(() {
+      List<MeetingSchedule> filtered = _meetings;
 
-    final selectedType = _meetingTypes[_selectedTypeIndex];
-    final now = DateTime.now();
+      if (_selectedTypeIndex != 0) {
+        final selectedType = _meetingTypes[_selectedTypeIndex];
+        final now = DateTime.now();
 
-    return meetings.where((meeting) {
-      final status = meeting.getStatusName().toUpperCase();
+        filtered = filtered.where((meeting) {
+          final status = meeting.getStatusName().toUpperCase();
 
-      if (selectedType == 'SCHEDULED') {
-        // For scheduled meetings, check if end time is greater than current date
-        if (status == 'SCHEDULED') {
-          try {
-            // Parse meeting date and end time
-            final meetingDate = DateTime.parse(meeting.meetingDate);
-            final endTime = meeting.endTime ?? meeting.startTime;
+          if (selectedType == 'SCHEDULED') {
+            if (status == 'SCHEDULED') {
+              try {
+                final meetingDate = DateTime.parse(meeting.meetingDate);
+                final endTime = meeting.endTime ?? meeting.startTime;
 
-            // Create full datetime for meeting end
-            final meetingEndDateTime = DateTime(
-              meetingDate.year,
-              meetingDate.month,
-              meetingDate.day,
-              int.parse(endTime.split(':')[0]),
-              int.parse(endTime.split(':')[1]),
-            );
+                final meetingEndDateTime = DateTime(
+                  meetingDate.year,
+                  meetingDate.month,
+                  meetingDate.day,
+                  int.parse(endTime.split(':')[0]),
+                  int.parse(endTime.split(':')[1]),
+                );
 
-            // Only show if meeting end time is greater than current time
-            return meetingEndDateTime.isAfter(now);
-          } catch (e) {
-            // If parsing fails, show the meeting anyway
-            return true;
+                return meetingEndDateTime.isAfter(now);
+              } catch (e) {
+                return true;
+              }
+            }
+            return false;
           }
-        }
-        return false;
+
+          return status == selectedType;
+        }).toList();
       }
 
-      // For other statuses, just check the status
-      return status == selectedType;
-    }).toList();
+      // Apply Search Filter
+      if (_searchQuery.isNotEmpty) {
+        final query = _searchQuery.toLowerCase();
+        filtered = filtered.where((meeting) {
+          final titleMatches = meeting.title.toLowerCase().contains(query);
+          final propertyName = _getPropertyName(meeting.propertyId).toLowerCase();
+          final customerName = _getUserName(meeting.customerId).toLowerCase();
+          
+          return titleMatches || propertyName.contains(query) || customerName.contains(query);
+        }).toList();
+      }
+
+      // Apply Date Sort
+      filtered.sort((a, b) {
+        DateTime dateA;
+        try {
+          dateA = a.createdAt != null ? DateTime.parse(a.createdAt!) : DateTime.fromMillisecondsSinceEpoch(0);
+        } catch (e) {
+          dateA = DateTime.fromMillisecondsSinceEpoch(0);
+        }
+
+        DateTime dateB;
+        try {
+          dateB = b.createdAt != null ? DateTime.parse(b.createdAt!) : DateTime.fromMillisecondsSinceEpoch(0);
+        } catch (e) {
+          dateB = DateTime.fromMillisecondsSinceEpoch(0);
+        }
+
+        if (_sortOrder == 'ASC') {
+          return dateA.compareTo(dateB);
+        } else {
+          return dateB.compareTo(dateA); // DESC default
+        }
+      });
+
+      _filteredMeetings = filtered;
+    });
   }
 
   Widget _buildMeetingTypesList() {
@@ -309,7 +346,7 @@ class _MyScheduledMeetingsPageState extends State<MyScheduledMeetingsPage>
                 setState(() {
                   _selectedTypeIndex = index;
                 });
-                _loadMyScheduledMeetings();
+                _applyFilters();
               },
               child: Container(
                 padding:
@@ -537,9 +574,102 @@ class _MyScheduledMeetingsPageState extends State<MyScheduledMeetingsPage>
                     children: [
                       // Meeting types filter
                       _buildMeetingTypesList(),
+                      
+                      // Search and Sort Control
+                      Container(
+                        margin: const EdgeInsets.only(left: 20, right: 20, top: 12, bottom: 20),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              flex: 3,
+                              child: Container(
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: isDark ? AppColors.darkCardBackground : Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.grey.withOpacity(0.3),
+                                  ),
+                                ),
+                                child: TextField(
+                                  onChanged: (value) {
+                                    _searchQuery = value;
+                                    _applyFilters();
+                                  },
+                                  style: TextStyle(
+                                    color: isDark ? AppColors.darkWhiteText : AppColors.lightDarkText,
+                                  ),
+                                  decoration: InputDecoration(
+                                    hintText: 'Search meetings...',
+                                    hintStyle: TextStyle(
+                                      color: Colors.grey[500],
+                                      fontSize: 14,
+                                    ),
+                                    prefixIcon: Icon(
+                                      CupertinoIcons.search,
+                                      color: Colors.grey[500],
+                                      size: 20,
+                                    ),
+                                    border: InputBorder.none,
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 14,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              flex: 2,
+                              child: Container(
+                                height: 48,
+                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                                decoration: BoxDecoration(
+                                  color: isDark ? AppColors.darkCardBackground : Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.grey.withOpacity(0.3),
+                                  ),
+                                ),
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<String>(
+                                    value: _sortOrder,
+                                    isExpanded: true,
+                                    icon: Icon(
+                                      CupertinoIcons.sort_down,
+                                      size: 20,
+                                      color: isDark ? AppColors.darkWhiteText : AppColors.lightDarkText,
+                                    ),
+                                    dropdownColor: isDark ? AppColors.darkCardBackground : Colors.white,
+                                    style: TextStyle(
+                                      color: isDark ? AppColors.darkWhiteText : AppColors.lightDarkText,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    onChanged: (String? newValue) {
+                                      if (newValue != null) {
+                                        setState(() {
+                                          _sortOrder = newValue;
+                                          _applyFilters();
+                                        });
+                                      }
+                                    },
+                                    items: const [
+                                      DropdownMenuItem(value: 'DESC', child: Text('Newest')),
+                                      DropdownMenuItem(value: 'ASC', child: Text('Oldest')),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      
                       // Meetings list
                       Expanded(
-                        child: _meetings.isEmpty
+                        child: _filteredMeetings.isEmpty
                             ? _buildEmptyState()
                             : _buildMeetingsList(),
                       ),
@@ -706,9 +836,9 @@ class _MyScheduledMeetingsPageState extends State<MyScheduledMeetingsPage>
       builder: (context, child) {
         return ListView.builder(
           padding: const EdgeInsets.all(20),
-          itemCount: _meetings.length,
+          itemCount: _filteredMeetings.length,
           itemBuilder: (context, index) {
-            final meeting = _meetings[index];
+            final meeting = _filteredMeetings[index];
             return FadeTransition(
               opacity: _fadeAnimation,
               child: SlideTransition(

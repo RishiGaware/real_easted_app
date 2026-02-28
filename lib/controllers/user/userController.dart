@@ -136,7 +136,7 @@ class UserController {
           'totalLeads': totalLeads,
           'activeLeads': activeLeads,
           'completedLeads': completedLeads,
-          'isAdmin': userRoleName.toLowerCase() == 'admin',
+          'isAdmin': isAdmin,
         };
       }
 
@@ -188,16 +188,52 @@ class UserController {
     }
   }
 
-  // New: Get assigned leads for sales user using the new endpoint
+  // New: Get assigned leads for sales user using the new endpoint or all leads for admin
   Future<List<LeadsModel>> getAssignedLeadsNew() async {
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('token') ?? '';
-    final response = await _leadsService.getAssignedLeadsForCurrentUser(token);
-    if (response['statusCode'] == 200) {
-      return (response['data'] as List)
-          .map((item) => LeadsModel.fromJson(item))
-          .toList();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('token') ?? '';
+      final currentUser = prefs.getString('currentUser') ?? '';
+
+      if (currentUser.isEmpty) {
+        return [];
+      }
+
+      final decodedCurrentUser = jsonDecode(currentUser);
+      final userRoleId = decodedCurrentUser['role'] ?? '';
+
+      // Get role name by role ID
+      String userRoleName = '';
+      try {
+        final roleData = await _roleController.getRoleById(userRoleId);
+        if (roleData['statusCode'] == 200) {
+          userRoleName = roleData['data']['name'] ?? '';
+        }
+      } catch (e) {
+        // Error handled silently
+      }
+
+      // Check if user is admin
+      bool isAdmin = userRoleId == '68162f63ff2da55b40ca61b8' ||
+          userRoleName.toLowerCase() == 'admin';
+
+      Map<String, dynamic> response;
+      if (isAdmin) {
+        // Find all leads for admin users
+        response = await _leadsService.getAllLeads(token, '');
+      } else {
+        // Find assigned leads for other users
+        response = await _leadsService.getAssignedLeadsForCurrentUser(token);
+      }
+
+      if (response['statusCode'] == 200) {
+        return (response['data'] as List)
+            .map((item) => LeadsModel.fromJson(item))
+            .toList();
+      }
+      return [];
+    } catch (e) {
+      return [];
     }
-    return [];
   }
 }

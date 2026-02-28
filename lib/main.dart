@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:inhabit_realties/constants/theme.dart';
 import 'package:inhabit_realties/pages/auth/login_page.dart';
 import 'package:inhabit_realties/pages/auth/logout_page.dart';
@@ -87,6 +88,14 @@ class _MainAppState extends State<MainApp> {
             themeMode: themeProvider.currentTheme == 'dark'
                 ? ThemeMode.dark
                 : ThemeMode.light,
+            localizationsDelegates: const [
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [
+              Locale('en', ''), // English
+            ],
             initialRoute: '/',
             routes: {
               '/': (context) => const SplashPage(),

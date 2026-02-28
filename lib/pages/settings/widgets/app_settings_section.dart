@@ -95,8 +95,8 @@ class _AppSettingsSectionState extends State<AppSettingsSection> {
               const Divider(),
               _buildDateRangeSetting(),
               const Divider(),
-              _buildItemsPerPageSetting(),
-              const Divider(),
+              // _buildItemsPerPageSetting(),
+              // const Divider(),
             ],
           ),
         );

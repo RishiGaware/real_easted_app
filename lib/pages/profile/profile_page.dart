@@ -186,22 +186,22 @@ class _ProfilePageState extends State<ProfilePage> {
                   const SizedBox(height: 15),
                   Row(
                     children: [
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => _showActivityDetails(context,
-                              'Total Leads', _userStats['totalLeads'] ?? 0),
-                          child: _buildStatCard(
-                            context,
-                            '${_userStats['totalLeads']}',
-                            _userStats['isAdmin'] == true
-                                ? 'Total Leads (All)'
-                                : 'Total Leads (Assigned to you)',
-                            brandColor,
-                            CupertinoIcons.person_2_square_stack_fill,
+                      if (_userStats['isAdmin'] != true) ...[
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => _showActivityDetails(context,
+                                'Total Leads', _userStats['totalLeads'] ?? 0),
+                            child: _buildStatCard(
+                              context,
+                              '${_userStats['totalLeads']}',
+                              'Total Leads (Assigned to you)',
+                              brandColor,
+                              CupertinoIcons.person_2_square_stack_fill,
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 10),
+                        const SizedBox(width: 10),
+                      ],
                       Expanded(
                         child: GestureDetector(
                           onTap: () => _showActivityDetails(context,
@@ -262,7 +262,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                   const Divider(height: 1),
                   ProfileMenuListView(
-                      assignedLeadsCount: _userStats['totalLeads'] ?? 0),
+                      assignedLeadsCount: _userStats['totalLeads'] ?? 0,
+                      isAdmin: _userStats['isAdmin'] ?? false,
+                  ),
                 ],
               ),
             ),

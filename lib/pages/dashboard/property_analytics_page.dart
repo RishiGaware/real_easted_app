@@ -518,7 +518,7 @@ class _PropertyAnalyticsPageState extends State<PropertyAnalyticsPage>
                         total > 0 ? (entry.value / total) * 100 : 0;
                     return PieChartSectionData(
                       value: entry.value.toDouble(),
-                      title: '${entry.key}\n${percentage.toStringAsFixed(1)}%',
+                      title: '${percentage.toStringAsFixed(1)}%',
                       radius: 60,
                       color: _getStatusColor(entry.key),
                       titleStyle: const TextStyle(
@@ -532,6 +532,34 @@ class _PropertyAnalyticsPageState extends State<PropertyAnalyticsPage>
                 centerSpaceRadius: 40,
               ),
             ),
+          ),
+          const SizedBox(height: 20),
+          Wrap(
+            spacing: 16,
+            runSpacing: 8,
+            children: statusData.keys
+                .map((status) {
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 16,
+                        height: 16,
+                        decoration: BoxDecoration(
+                          color: _getStatusColor(status as String),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        status,
+                        style: Theme.of(context).textTheme.bodyMedium,
+                      ),
+                    ],
+                  );
+                })
+                .toList()
+                .cast<Widget>(),
           ),
         ],
       ),
@@ -578,7 +606,7 @@ class _PropertyAnalyticsPageState extends State<PropertyAnalyticsPage>
                         total > 0 ? (entry.value / total) * 100 : 0;
                     return PieChartSectionData(
                       value: entry.value.toDouble(),
-                      title: '${entry.key}\n${percentage.toStringAsFixed(1)}%',
+                      title: '${percentage.toStringAsFixed(1)}%',
                       color: _getTypeColor(entry.key),
                       radius: 60,
                       titleStyle: const TextStyle(
@@ -641,7 +669,15 @@ class _PropertyAnalyticsPageState extends State<PropertyAnalyticsPage>
       case 'DS':
         return Colors.purple;
       default:
-        return Colors.grey;
+        // Stable fallback color based on string hash
+        final int hash = type.hashCode;
+        // Generate a vibrant color
+        return Color.fromARGB(
+          255,
+          (hash & 0xFF0000) >> 16 | 0x40,
+          (hash & 0x00FF00) >> 8 | 0x40,
+          (hash & 0x0000FF) | 0x40,
+        );
     }
   }
 
@@ -1342,8 +1378,11 @@ class _PropertyAnalyticsPageState extends State<PropertyAnalyticsPage>
 
   Color _getStatusColor(String status) {
     switch (status.toUpperCase()) {
+      case 'FOR SALE':
       case 'ACTIVE':
         return AppColors.lightSuccess;
+      case 'FOR RENT':
+        return AppColors.brandPrimary;
       case 'SOLD':
         return AppColors.lightWarning;
       case 'PENDING':
@@ -1351,7 +1390,14 @@ class _PropertyAnalyticsPageState extends State<PropertyAnalyticsPage>
       case 'INACTIVE':
         return Colors.grey;
       default:
-        return AppColors.brandPrimary;
+        // Stable fallback color based on string hash
+        final int hash = status.hashCode;
+        return Color.fromARGB(
+          255,
+          (hash & 0xFF0000) >> 16 | 0x80,
+          (hash & 0x00FF00) >> 8 | 0x80,
+          (hash & 0x0000FF) | 0x80,
+        );
     }
   }
 

@@ -22,8 +22,14 @@ class _MeetingScheduleAdminPageState extends State<MeetingScheduleAdminPage>
     with TickerProviderStateMixin {
   final MeetingScheduleService _meetingService = MeetingScheduleService();
   List<MeetingSchedule> _meetings = [];
+  List<MeetingSchedule> _filteredMeetings = [];
   bool _isLoading = true;
   String? _error;
+
+  // Search and Sort
+  String _searchQuery = '';
+  // 'DESC' = Newest first (default), 'ASC' = Oldest first
+  String _sortOrder = 'DESC';
 
   // Cache for user and property details
   Map<String, Map<String, dynamic>> _userCache = {};
@@ -117,6 +123,8 @@ class _MeetingScheduleAdminPageState extends State<MeetingScheduleAdminPage>
         _isLoading = false;
       });
 
+      _applyFilters();
+
       // Start animation after data is loaded
       _animationController.forward();
     } catch (e) {
@@ -185,6 +193,50 @@ class _MeetingScheduleAdminPageState extends State<MeetingScheduleAdminPage>
     if (mounted) {
       setState(() {});
     }
+  }
+
+  void _applyFilters() {
+    setState(() {
+      List<MeetingSchedule> filtered = _meetings;
+
+      // Apply Search Filter
+      if (_searchQuery.isNotEmpty) {
+        final query = _searchQuery.toLowerCase();
+        filtered = filtered.where((meeting) {
+          final titleMatches = meeting.title.toLowerCase().contains(query);
+          final propertyName = _getPropertyName(meeting.propertyId).toLowerCase();
+          final customerName = _getUserName(meeting.customerId).toLowerCase();
+          final scheduledByName = _getUserName(meeting.scheduledByUserId).toLowerCase();
+          
+          return titleMatches || propertyName.contains(query) || customerName.contains(query) || scheduledByName.contains(query);
+        }).toList();
+      }
+
+      // Apply Date Sort
+      filtered.sort((a, b) {
+        DateTime dateA;
+        try {
+          dateA = a.createdAt != null ? DateTime.parse(a.createdAt!) : DateTime.fromMillisecondsSinceEpoch(0);
+        } catch (e) {
+          dateA = DateTime.fromMillisecondsSinceEpoch(0);
+        }
+
+        DateTime dateB;
+        try {
+          dateB = b.createdAt != null ? DateTime.parse(b.createdAt!) : DateTime.fromMillisecondsSinceEpoch(0);
+        } catch (e) {
+          dateB = DateTime.fromMillisecondsSinceEpoch(0);
+        }
+
+        if (_sortOrder == 'ASC') {
+          return dateA.compareTo(dateB);
+        } else {
+          return dateB.compareTo(dateA); // DESC default
+        }
+      });
+
+      _filteredMeetings = filtered;
+    });
   }
 
   String _getUserName(String userId) {
@@ -258,9 +310,108 @@ class _MeetingScheduleAdminPageState extends State<MeetingScheduleAdminPage>
             ? _buildLoadingState()
             : _error != null
                 ? _buildErrorState()
-                : _meetings.isEmpty
-                    ? _buildEmptyState()
-                    : _buildMeetingsList(),
+                : Column(
+                    children: [
+                      // Search and Sort Control
+                      Container(
+                        margin: const EdgeInsets.only(left: 20, right: 20, top: 12, bottom: 8),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              flex: 3,
+                              child: Container(
+                                height: 48,
+                                decoration: BoxDecoration(
+                                  color: isDark ? AppColors.darkCardBackground : Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.grey.withOpacity(0.3),
+                                  ),
+                                ),
+                                child: TextField(
+                                  onChanged: (value) {
+                                    _searchQuery = value;
+                                    _applyFilters();
+                                  },
+                                  style: TextStyle(
+                                    color: isDark ? AppColors.darkWhiteText : AppColors.lightDarkText,
+                                  ),
+                                  decoration: InputDecoration(
+                                    hintText: 'Search meetings...',
+                                    hintStyle: TextStyle(
+                                      color: Colors.grey[500],
+                                      fontSize: 14,
+                                    ),
+                                    prefixIcon: Icon(
+                                      CupertinoIcons.search,
+                                      color: Colors.grey[500],
+                                      size: 20,
+                                    ),
+                                    border: InputBorder.none,
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 14,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              flex: 2,
+                              child: Container(
+                                height: 48,
+                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                                decoration: BoxDecoration(
+                                  color: isDark ? AppColors.darkCardBackground : Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.grey.withOpacity(0.3),
+                                  ),
+                                ),
+                                child: DropdownButtonHideUnderline(
+                                  child: DropdownButton<String>(
+                                    value: _sortOrder,
+                                    isExpanded: true,
+                                    icon: Icon(
+                                      CupertinoIcons.sort_down,
+                                      size: 20,
+                                      color: isDark ? AppColors.darkWhiteText : AppColors.lightDarkText,
+                                    ),
+                                    dropdownColor: isDark ? AppColors.darkCardBackground : Colors.white,
+                                    style: TextStyle(
+                                      color: isDark ? AppColors.darkWhiteText : AppColors.lightDarkText,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                    onChanged: (String? newValue) {
+                                      if (newValue != null) {
+                                        setState(() {
+                                          _sortOrder = newValue;
+                                          _applyFilters();
+                                        });
+                                      }
+                                    },
+                                    items: const [
+                                      DropdownMenuItem(value: 'DESC', child: Text('Newest')),
+                                      DropdownMenuItem(value: 'ASC', child: Text('Oldest')),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      // Meetings list
+                      Expanded(
+                        child: _filteredMeetings.isEmpty
+                            ? _buildEmptyState()
+                            : _buildMeetingsList(),
+                      ),
+                    ],
+                  ),
       ),
     );
   }
@@ -422,9 +573,9 @@ class _MeetingScheduleAdminPageState extends State<MeetingScheduleAdminPage>
       builder: (context, child) {
         return ListView.builder(
           padding: const EdgeInsets.all(20),
-          itemCount: _meetings.length,
+          itemCount: _filteredMeetings.length,
           itemBuilder: (context, index) {
-            final meeting = _meetings[index];
+            final meeting = _filteredMeetings[index];
             return FadeTransition(
               opacity: _fadeAnimation,
               child: SlideTransition(

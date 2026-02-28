@@ -163,6 +163,19 @@ class _PropertyPageState extends State<PropertiesPage>
     setState(() {
       isPageLoading = true;
       isInitialLoading = true;
+      // Clear data to prevent duplicates on refresh
+      propertyTypes.clear();
+      propertyTypes.add(
+        PropertyTypeModel(
+          id: 'all',
+          typeName: 'ALL',
+          description: 'All types',
+          createdByUserId: '0',
+          updatedByUserId: '0',
+          published: true,
+        ),
+      );
+      // Reset selections to defaults if desired, or keep them to refetch similar data
     });
     await getAllPropertyTypes();
     await loadProperties();

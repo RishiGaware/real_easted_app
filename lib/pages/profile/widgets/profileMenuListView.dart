@@ -7,7 +7,12 @@ import 'package:inhabit_realties/controllers/notification/notificationController
 
 class ProfileMenuListView extends StatefulWidget {
   final int assignedLeadsCount;
-  const ProfileMenuListView({super.key, required this.assignedLeadsCount});
+  final bool isAdmin;
+  const ProfileMenuListView({
+    super.key,
+    required this.assignedLeadsCount,
+    this.isAdmin = false,
+  });
 
   @override
   State<ProfileMenuListView> createState() => _ProfileMenuListViewState();
@@ -16,16 +21,22 @@ class ProfileMenuListView extends StatefulWidget {
 class _ProfileMenuListViewState extends State<ProfileMenuListView> {
   @override
   Widget build(BuildContext context) {
+    // Filter menu items based on user role
+    List<Map<String, dynamic>> menuItems = List.from(ProfileMenuList.list);
+    if (widget.isAdmin) {
+      menuItems.removeWhere((item) => item['title'] == 'Assigned Leads');
+    }
+
     return ListView.separated(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.symmetric(vertical: 10),
-      itemCount: ProfileMenuList.list.length,
+      itemCount: menuItems.length,
       separatorBuilder: (context, index) => const Divider(height: 1),
       itemBuilder: (context, index) {
-        final item = ProfileMenuList.list[index];
+        final item = menuItems[index];
         final isDark = Theme.of(context).brightness == Brightness.dark;
-        final isLastItem = index == ProfileMenuList.list.length - 1;
+        final isLastItem = index == menuItems.length - 1;
         final isLogout = item['path'] == '/auth/logout';
         final defaultColor = isDark ? Colors.white70 : Colors.black87;
 

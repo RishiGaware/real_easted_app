@@ -25,8 +25,9 @@ import 'package:provider/provider.dart';
 
 class HomePage extends StatefulWidget {
   final VoidCallback onToggleTheme;
+  final Function(int)? onSwitchTab;
 
-  const HomePage({super.key, required this.onToggleTheme});
+  const HomePage({super.key, required this.onToggleTheme, this.onSwitchTab});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -760,52 +761,72 @@ class _HomePageState extends State<HomePage>
                               ),
                             ),
                             // Today's Notifications
-                            Consumer<NotificationController>(
-                              builder:
-                                  (context, notificationController, child) {
-                                return _buildStatCard(
-                                  CupertinoIcons.bell,
-                                  'Today\'s Notifications',
-                                  notificationController.todayNotificationsCount
-                                      .toString(),
-                                  AppColors.brandPrimary,
-                                  false,
-                                  subtitle: 'New notifications',
-                                );
+                            GestureDetector(
+                              onTap: () {
+                                Navigator.pushNamed(context, '/notifications');
                               },
+                              child: Consumer<NotificationController>(
+                                builder:
+                                    (context, notificationController, child) {
+                                  return _buildStatCard(
+                                    CupertinoIcons.bell,
+                                    'Today\'s Notifications',
+                                    notificationController.todayNotificationsCount
+                                        .toString(),
+                                    AppColors.brandPrimary,
+                                    false,
+                                    subtitle: 'New notifications',
+                                  );
+                                },
+                              ),
                             ),
                             // Today's Inquiries
-                            Consumer<LeadsController>(
-                              builder: (context, leadsController, child) {
-                                return _buildStatCard(
-                                  CupertinoIcons.question_circle,
-                                  'Today\'s Inquiries',
-                                  leadsController.todayInquiriesCount
-                                      .toString(),
-                                  AppColors.lightSuccess,
-                                  false,
-                                  subtitle: 'New leads',
-                                );
+                            GestureDetector(
+                              onTap: () {
+                                widget.onSwitchTab?.call(2); // 2 is the index for Leads tab
                               },
+                              child: Consumer<LeadsController>(
+                                builder: (context, leadsController, child) {
+                                  return _buildStatCard(
+                                    CupertinoIcons.question_circle,
+                                    'Today\'s Inquiries',
+                                    leadsController.todayInquiriesCount
+                                        .toString(),
+                                    AppColors.lightSuccess,
+                                    false,
+                                    subtitle: 'New leads',
+                                  );
+                                },
+                              ),
                             ),
                             // Today's & Tomorrow's Schedules
-                            _buildStatCard(
-                              CupertinoIcons.calendar,
-                              'Today\'s Schedules',
-                              _dashboardController.todaySchedulesCount
-                                  .toString(),
-                              AppColors.lightWarning,
-                              _dashboardController.isLoading,
-                              subtitle: 'Meetings scheduled',
+                            GestureDetector(
+                              onTap: () {
+                                widget.onSwitchTab?.call(3); // 3 is the index for Meetings tab
+                              },
+                              child: _buildStatCard(
+                                CupertinoIcons.calendar,
+                                'Today\'s Schedules',
+                                _dashboardController.todaySchedulesCount
+                                    .toString(),
+                                AppColors.lightWarning,
+                                _dashboardController.isLoading,
+                                subtitle: 'Meetings scheduled',
+                              ),
                             ),
-                            _buildStatCard(
-                              CupertinoIcons.calendar_today,
-                              'Tomorrow\'s Schedules',
-                              _dashboardController.tomorrowSchedulesCount
-                                  .toString(),
-                              AppColors.lightPrimary,
-                              _dashboardController.isLoading,
-                              subtitle: 'Upcoming meetings',
+                            GestureDetector(
+                              onTap: () {
+                                widget.onSwitchTab?.call(3); // 3 is the index for Meetings tab
+                              },
+                              child: _buildStatCard(
+                                CupertinoIcons.calendar_today,
+                                'Tomorrow\'s Schedules',
+                                _dashboardController.tomorrowSchedulesCount
+                                    .toString(),
+                                AppColors.lightPrimary,
+                                _dashboardController.isLoading,
+                                subtitle: 'Upcoming meetings',
+                              ),
                             ),
                           ],
                         ),

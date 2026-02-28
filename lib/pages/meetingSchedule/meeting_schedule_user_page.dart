@@ -58,6 +58,11 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
 
+  // Search and Sort
+  String _searchQuery = '';
+  // 'DESC' = Newest first (default), 'ASC' = Oldest first
+  String _sortOrder = 'DESC';
+
   // Timer for checking missed meetings
   Timer? _missedMeetingTimer;
 
@@ -396,6 +401,41 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
           return false;
         }).toList();
       }
+
+      // Apply Search Filter
+      if (_searchQuery.isNotEmpty) {
+        final query = _searchQuery.toLowerCase();
+        _filteredMeetings = _filteredMeetings.where((meeting) {
+          final titleMatches = meeting.title.toLowerCase().contains(query);
+          final propertyName = _getPropertyName(meeting.propertyId).toLowerCase();
+          final customerName = _getUserName(meeting.customerId).toLowerCase();
+          
+          return titleMatches || propertyName.contains(query) || customerName.contains(query);
+        }).toList();
+      }
+
+      // Apply Date Sort by newly added (createdAt)
+      _filteredMeetings.sort((a, b) {
+        DateTime dateA;
+        try {
+          dateA = a.createdAt != null ? DateTime.parse(a.createdAt!) : DateTime.fromMillisecondsSinceEpoch(0);
+        } catch (e) {
+          dateA = DateTime.fromMillisecondsSinceEpoch(0);
+        }
+
+        DateTime dateB;
+        try {
+          dateB = b.createdAt != null ? DateTime.parse(b.createdAt!) : DateTime.fromMillisecondsSinceEpoch(0);
+        } catch (e) {
+          dateB = DateTime.fromMillisecondsSinceEpoch(0);
+        }
+
+        if (_sortOrder == 'ASC') {
+          return dateA.compareTo(dateB);
+        } else {
+          return dateB.compareTo(dateA); // DESC default (newest first)
+        }
+      });
     });
   }
 
@@ -636,7 +676,7 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
 
             // Toggle button for meeting types
             Container(
-              margin: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+              margin: const EdgeInsets.only(left: 20, right: 20, bottom: 12),
               child: Row(
                 children: [
                   Expanded(
@@ -665,6 +705,98 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
                       child: _buildToggleButtonContainer(
                         isActive: _showScheduledMeetings,
                         text: 'Scheduled by Me',
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Search and Sort Control
+            Container(
+              margin: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+              child: Row(
+                children: [
+                  Expanded(
+                    flex: 3,
+                    child: Container(
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkCardBackground : Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.grey.withOpacity(0.3),
+                        ),
+                      ),
+                      child: TextField(
+                        onChanged: (value) {
+                          _searchQuery = value;
+                          _filterMeetingsByType();
+                        },
+                        style: TextStyle(
+                          color: isDark ? AppColors.darkWhiteText : AppColors.lightDarkText,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Search meetings...',
+                          hintStyle: TextStyle(
+                            color: Colors.grey[500],
+                            fontSize: 14,
+                          ),
+                          prefixIcon: Icon(
+                            CupertinoIcons.search,
+                            color: Colors.grey[500],
+                            size: 20,
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: Container(
+                      height: 48,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkCardBackground : Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.grey.withOpacity(0.3),
+                        ),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: _sortOrder,
+                          isExpanded: true,
+                          icon: Icon(
+                            CupertinoIcons.sort_down,
+                            size: 20,
+                            color: isDark ? AppColors.darkWhiteText : AppColors.lightDarkText,
+                          ),
+                          dropdownColor: isDark ? AppColors.darkCardBackground : Colors.white,
+                          style: TextStyle(
+                            color: isDark ? AppColors.darkWhiteText : AppColors.lightDarkText,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          onChanged: (String? newValue) {
+                            if (newValue != null) {
+                              setState(() {
+                                _sortOrder = newValue;
+                                _filterMeetingsByType();
+                              });
+                            }
+                          },
+                          items: const [
+                            DropdownMenuItem(value: 'DESC', child: Text('Newest')),
+                            DropdownMenuItem(value: 'ASC', child: Text('Oldest')),
+                          ],
+                        ),
                       ),
                     ),
                   ),

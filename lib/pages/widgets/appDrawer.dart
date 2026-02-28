@@ -137,9 +137,11 @@ class _AppDrawerState extends State<AppDrawer> {
                                   },
                                 )
                               : null,
-                          onBackgroundImageError: (exception, stackTrace) {
-                            // Handle image loading error silently
-                          },
+                          onBackgroundImageError: userProfileImage != null
+                              ? (exception, stackTrace) {
+                                  // Handle image loading error silently
+                                }
+                              : null,
                           child: userProfileImage == null
                               ? Icon(
                                   CupertinoIcons.person_fill,
