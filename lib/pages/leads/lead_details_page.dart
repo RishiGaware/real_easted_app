@@ -273,13 +273,17 @@ class _LeadDetailsPageState extends State<LeadDetailsPage>
             child: Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: () {
-                  Navigator.push(
+                onTap: () async {
+                  final result = await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => AddLeadPage(lead: widget.lead),
                     ),
                   );
+                  // Return true so the LeadsPage refreshes.
+                  if (result == true && mounted) {
+                    Navigator.pop(context, true);
+                  }
                 },
                 borderRadius: BorderRadius.circular(50),
                 child: Container(

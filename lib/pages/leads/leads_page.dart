@@ -781,13 +781,18 @@ class _LeadsPageState extends State<LeadsPage> with TickerProviderStateMixin {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {
-            Navigator.push(
+          onTap: () async {
+            final result = await Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (context) => LeadDetailsPage(lead: lead),
               ),
             );
+            
+            // If the lead was edited successfully, reload data
+            if (result == true && mounted) {
+              _loadData();
+            }
           },
           borderRadius: BorderRadius.circular(16),
           child: Container(

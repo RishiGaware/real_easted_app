@@ -408,6 +408,8 @@ class _AddLeadPageState extends State<AddLeadPage> {
 
       bool success;
       if (_isEditMode) {
+        debugPrint('--- EDIT LEAD PAYLOAD ---');
+        debugPrint(jsonEncode(lead.toJsonForEdit()));
         success = await _leadsController.editLead(lead);
       } else {
         success = await _leadsController.createLead(lead);

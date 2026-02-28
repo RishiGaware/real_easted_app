@@ -223,7 +223,8 @@ class LeadsModel {
 
   /// Serialize to JSON
   Map<String, dynamic> toJson() {
-    return {
+    final map = <String, dynamic>{
+      '_id': id.isNotEmpty ? id : null,
       'userId': userId,
       'leadDesignation': leadDesignation,
       'leadInterestedPropertyId': leadInterestedPropertyId,
@@ -246,12 +247,18 @@ class LeadsModel {
       'createdByUserId': createdByUserId,
       'updatedByUserId': updatedByUserId,
       'published': published,
+      'createdAt': createdAt.toIso8601String(),
+      'updatedAt': updatedAt.toIso8601String(),
     };
+
+    map.removeWhere((key, value) => value == null || value == '');
+    
+    return map;
   }
 
   /// Serialize to JSON for edit operations (excludes fields that shouldn't be modified)
   Map<String, dynamic> toJsonForEdit() {
-    return {
+    final map = <String, dynamic>{
       'userId': userId,
       'leadDesignation': leadDesignation,
       'leadInterestedPropertyId': leadInterestedPropertyId,
@@ -273,5 +280,11 @@ class LeadsModel {
       'note': note,
       'published': published,
     };
+
+    // Remove empty values to match the frontend React payload behavior.
+    // This prevents the backend API from rejecting nulls or overriding existing valid data with nulls.
+    map.removeWhere((key, value) => value == null || value == '');
+
+    return map;
   }
 }
