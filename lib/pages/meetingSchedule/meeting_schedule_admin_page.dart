@@ -231,7 +231,7 @@ class _MeetingScheduleAdminPageState extends State<MeetingScheduleAdminPage>
         if (_sortOrder == 'ASC') {
           return dateA.compareTo(dateB);
         } else {
-          return dateB.compareTo(dateA); // DESC default
+          return dateB.compareTo(dateA); // DESC default (newest first)
         }
       });
 

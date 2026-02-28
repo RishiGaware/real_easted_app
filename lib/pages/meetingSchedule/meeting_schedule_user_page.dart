@@ -453,47 +453,72 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
         throw Exception('User not authenticated');
       }
 
-      final currentUserData = jsonDecode(currentUserJson);
-      final currentUserId = currentUserData['_id'] ?? currentUserData['id'];
-      final currentUserRole = currentUserData['role'];
+      final userData = jsonDecode(currentUserJson);
+      final currentUserId = userData['_id'] ?? userData['id'];
 
       if (currentUserId == null) {
-        throw Exception('User ID not found in user data');
+        throw Exception('User ID not found');
       }
 
-      // Use getMyMeetings() for customer meetings and getAllMeetings() for scheduled meetings
-      List<MeetingSchedule> meetings;
-      if (_showScheduledMeetings) {
-        // For scheduled meetings, get all meetings and filter by scheduledByUserId
-        final allMeetings = await _meetingService.getAllMeetings();
-        meetings = allMeetings
-            .where((meeting) => meeting.scheduledByUserId == currentUserId)
-            .toList();
-      } else {
-        // For customer meetings, use the optimized getMyMeetings() method
-        meetings = await _meetingService.getMyMeetings();
-      }
+      // Fetch all meetings relevant to the user (where they are customer OR scheduler)
+      final allRelevantMeetings = await _meetingService.getMyMeetings();
 
       // Check and update missed meetings
       await _meetingService.checkAndUpdateMissedMeetings();
 
-      setState(() {
-        _meetings = meetings;
-        _filteredMeetings = List.from(meetings);
-        _isLoading = false;
-        totalItems = meetings.length;
-        hasMoreData = meetings.length >= itemsPerPage;
+      List<MeetingSchedule> filteredForTab;
+      if (_showScheduledMeetings) {
+        // "Scheduled by Me" tab: User is the scheduler but NOT the customer
+        // (If they are both, it belongs in "My Meetings")
+        filteredForTab = allRelevantMeetings
+            .where((meeting) =>
+                meeting.scheduledByUserId == currentUserId &&
+                meeting.customerId != currentUserId)
+            .toList();
+      } else {
+        // "My Meetings" tab: User is the customer
+        filteredForTab = allRelevantMeetings
+            .where((meeting) => meeting.customerId == currentUserId)
+            .toList();
+      }
+
+      // Sort newest first by createdAt
+      filteredForTab.sort((a, b) {
+        DateTime dateA = a.createdAt != null
+            ? DateTime.tryParse(a.createdAt!) ?? DateTime.fromMillisecondsSinceEpoch(0)
+            : DateTime.fromMillisecondsSinceEpoch(0);
+        DateTime dateB = b.createdAt != null
+            ? DateTime.tryParse(b.createdAt!) ?? DateTime.fromMillisecondsSinceEpoch(0)
+            : DateTime.fromMillisecondsSinceEpoch(0);
+        return dateB.compareTo(dateA);
       });
 
-      // Load associated data and then apply current filter
+      setState(() {
+        _meetings = filteredForTab;
+        _filteredMeetings = List.from(filteredForTab);
+        _isLoading = false;
+        totalItems = filteredForTab.length;
+        hasMoreData = false; // We loaded all relevant meetings at once
+      });
+
+      // Load associated data and then apply current type filters
       await _loadAssociatedData();
-      _filterMeetingsByType(); // Re-apply the current filter
+      _filterMeetingsByType(); 
       _animationController.forward();
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
+      if (e.toString().contains('403')) {
+        setState(() {
+          _error = null;
+          _meetings = [];
+          _filteredMeetings = [];
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
     }
   }
 

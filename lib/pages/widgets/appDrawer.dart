@@ -260,20 +260,27 @@ class _AppDrawerState extends State<AppDrawer> {
 
       if (currentUser.isNotEmpty) {
         final userData = jsonDecode(currentUser);
-        final roleId = userData['role'] ?? '';
+        final roleData = userData['role'];
 
-        if (roleId.isNotEmpty) {
-          // Fetch role name using role ID
+        // If role is already populated as an object (Map)
+        if (roleData is Map && roleData.containsKey('name')) {
+          return roleData['name']?.toString() ?? '';
+        }
+
+        // If role is just an ID string, fetch it from backend
+        if (roleData is String && roleData.isNotEmpty) {
           try {
             final roleController = RoleController();
-            final roleData = await roleController.getRoleById(roleId);
+            final response = await roleController.getRoleById(roleData);
 
-            if (roleData['statusCode'] == 200 && roleData['data'] != null) {
-              return roleData['data']['name'] ?? '';
+            // Robust extraction: check both response['data'] and top-level response
+            if (response['data'] != null && response['data'] is Map) {
+              return response['data']['name']?.toString() ?? '';
+            } else if (response['name'] != null) {
+              return response['name'].toString();
             }
           } catch (e) {
-            // If role fetching fails, return null
-            return null;
+            // Handle error silently
           }
         }
       }
@@ -284,12 +291,16 @@ class _AppDrawerState extends State<AppDrawer> {
   }
 
   List<Map<String, dynamic>> _getFilteredMenuItems(String? userRole) {
-    if (userRole == null) {
-      return DrawerMenuList.list;
-    }
+    // Debug print for troubleshooting
+    print('DEBUG: Filtering menu for detected role string: "$userRole"');
 
-    final isAdmin = userRole.toLowerCase() == 'admin';
-    final isExecutive = userRole.toLowerCase() == 'executive';
+    final String roleLower = userRole?.toLowerCase().trim() ?? '';
+    
+    // Check if user is Admin (handle "admin" or "administrator")
+    final bool isAdmin = roleLower == 'admin' || roleLower == 'administrator';
+    
+    final bool isExecutiveLine = roleLower == 'executive';
+    final bool isSalesLine = roleLower == 'sales person' || roleLower == 'sales';
 
     return DrawerMenuList.list.where((item) {
       final path = item['path'] as String;
@@ -299,18 +310,16 @@ class _AppDrawerState extends State<AppDrawer> {
         return isAdmin;
       }
 
-      // Admin and Executive routes
-      if (path == '/all_purchase_bookings' || path == '/all_rental_bookings') {
-        return isAdmin || isExecutive;
+      // Hide "All Documents" from Executive and Sales
+      if (path == '/documents/all') {
+        if (isExecutiveLine || isSalesLine) {
+          return false;
+        }
       }
 
-      // Routes accessible to all authenticated users
-      if (path == '/settings' || path == '/auth/logout') {
-        return true;
-      }
-
-      // Default: show all items
+      // Default: show item
       return true;
     }).toList();
   }
+
 }

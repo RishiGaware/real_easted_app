@@ -148,9 +148,9 @@ class _MyScheduledMeetingsPageState extends State<MyScheduledMeetingsPage>
         throw Exception('User not authenticated');
       }
 
-      // Get all meetings and filter by scheduledByUserId
-      final allMeetings = await _meetingService.getAllMeetings();
-      final myScheduledMeetings = allMeetings
+      // Get user's meetings (which they have permissions for) and filter by scheduledByUserId
+      final userMeetings = await _meetingService.getMyMeetings();
+      final myScheduledMeetings = userMeetings
           .where((meeting) => meeting.scheduledByUserId == currentUserId)
           .toList();
 
@@ -167,10 +167,19 @@ class _MyScheduledMeetingsPageState extends State<MyScheduledMeetingsPage>
       // Start animation after data is loaded
       _animationController.forward();
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
+      if (e.toString().contains('403')) {
+        setState(() {
+          _error = null;
+          _meetings = [];
+          _isLoading = false;
+        });
+        _applyFilters();
+      } else {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
     }
   }
 

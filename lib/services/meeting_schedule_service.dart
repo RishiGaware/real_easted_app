@@ -340,24 +340,49 @@ class MeetingScheduleService {
   }
 
   // Get meeting schedule by user ID
-  Future<MeetingSchedule> getMeetingScheduleByUserId(String userId) async {
+  Future<List<MeetingSchedule>> getMeetingScheduleByUserId(String userId) async {
     try {
       final token = await _getToken();
       if (token == null) {
         throw Exception('No authentication token found');
       }
 
+      print('getMeetingScheduleByUserId called with userId: $userId');
+      
+      final url = '${ApiUrls.getMeetingScheduleById}$userId';
+      print('URL: $url');
+
       final response = await http.get(
-        Uri.parse('${ApiUrls.getMeetingScheduleById}$userId'),
+        Uri.parse(url),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
       );
+      
+      print('getMeetingScheduleByUserId response status: ${response.statusCode}');
+      print('getMeetingScheduleByUserId response body length: ${response.body.length}');
+      // Only print body if it's not too huge, or just the start
+      if (response.statusCode != 200 || response.body.length < 1000) {
+        print('body: ${response.body}');
+      }
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = json.decode(response.body);
-        return MeetingSchedule.fromJson(data['data']);
+        final List<dynamic> meetingsData = data['data'] ?? [];
+        final List<MeetingSchedule> meetings = meetingsData
+            .map((json) => MeetingSchedule.fromJson(json))
+            .toList();
+
+        meetings.sort((a, b) {
+          if (a.createdAt == null || b.createdAt == null) return 0;
+          final dateA = DateTime.tryParse(a.createdAt!);
+          final dateB = DateTime.tryParse(b.createdAt!);
+          if (dateA == null || dateB == null) return 0;
+          return dateB.compareTo(dateA);
+        });
+
+        return meetings;
       } else {
         throw Exception(
             'Failed to load meeting schedule: ${response.statusCode}');
