@@ -10,6 +10,9 @@ class AppSnackBar{
                     title: title,
                     message: message,
                     contentType: contentType,
+                    messageTextStyle: message.length > 60 
+                        ? const TextStyle(fontSize: 12, color: Colors.white)
+                        : const TextStyle(fontSize: 14, color: Colors.white),
                   ),
                 );
 

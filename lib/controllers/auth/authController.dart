@@ -6,6 +6,7 @@ import 'package:inhabit_realties/constants/apiUrls.dart';
 import 'package:inhabit_realties/models/auth/UsersModel.dart';
 import 'package:inhabit_realties/services/auth/authService.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:inhabit_realties/controllers/role/roleController.dart';
 
 class AuthController {
   final AuthService _authService = AuthService();
@@ -99,6 +100,31 @@ class AuthController {
     if (response['statusCode'] == 200) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('token', response['token']);
+
+      final roleId = response['data']['role'];
+      bool isUserRole = false;
+      try {
+        final roleController = RoleController();
+        final roleData = await roleController.getRoleById(roleId);
+        if (roleData != null && roleData['data'] != null) {
+          final roleName = roleData['data']['name'];
+          if (roleName?.toLowerCase() == 'user') {
+            isUserRole = true;
+          }
+        }
+      } catch (e) {
+        // Optional: log error or handle it
+      }
+
+      if (isUserRole) {
+        await prefs.remove('token');
+        return {
+          'statusCode': 403,
+          'message': 'User not allowed to login with mobile application. This is just for the internal team.',
+          'data': null
+        };
+      }
+
       await prefs.setString('currentUser', jsonEncode(response['data']));
     }
     return response;
