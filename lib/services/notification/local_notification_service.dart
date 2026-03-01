@@ -28,6 +28,22 @@ class LocalNotificationService {
       },
     );
 
+    // Explicitly create the notification channel for Android
+    if (Platform.isAndroid) {
+      final androidImplementation =
+          _notificationsPlugin.resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>();
+      if (androidImplementation != null) {
+        const AndroidNotificationChannel channel = AndroidNotificationChannel(
+          'inhabit_realties_channel',
+          'Inhabit Realties Notifications',
+          description: 'Used for important alerts and meeting reminders',
+          importance: Importance.max,
+        );
+        await androidImplementation.createNotificationChannel(channel);
+      }
+    }
+
     _initialized = true;
   }
 

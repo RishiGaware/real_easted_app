@@ -7,9 +7,11 @@ import 'package:inhabit_realties/services/notification/notificationService.dart'
 import 'package:inhabit_realties/models/notification/NotificationModel.dart';
 import 'package:inhabit_realties/services/notification/local_notification_service.dart';
 
+@pragma('vm:entry-point')
 class BackgroundNotificationService {
   static final Set<String> _alertedNotificationIds = {};
 
+  @pragma('vm:entry-point')
   static Future<void> initializeService() async {
     final service = FlutterBackgroundService();
 

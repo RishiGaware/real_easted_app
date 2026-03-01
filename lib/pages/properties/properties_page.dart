@@ -160,12 +160,13 @@ class _PropertyPageState extends State<PropertiesPage>
   }
 
   Future<void> _loadData() async {
+    if (isPageLoading) return;
+
     setState(() {
       isPageLoading = true;
-      isInitialLoading = true;
+      isInitialLoading = properties.isEmpty;
       // Clear data to prevent duplicates on refresh
-      propertyTypes.clear();
-      propertyTypes.add(
+      propertyTypes = [
         PropertyTypeModel(
           id: 'all',
           typeName: 'ALL',
@@ -174,21 +175,25 @@ class _PropertyPageState extends State<PropertiesPage>
           updatedByUserId: '0',
           published: true,
         ),
-      );
-      // Reset selections to defaults if desired, or keep them to refetch similar data
+      ];
     });
-    await getAllPropertyTypes();
-    await loadProperties();
 
-    // Clear any stale favorite status cache and reload from backend
-    await _loadFavoriteStatus();
-
-    setState(() {
-      isPageLoading = false;
-      isInitialLoading = false;
-      totalItems = properties.length;
-      hasMoreData = properties.length >= itemsPerPage;
-    });
+    try {
+      await getAllPropertyTypes();
+      await loadProperties();
+      await _loadFavoriteStatus();
+    } catch (e) {
+      debugPrint('Error loading data: $e');
+    } finally {
+      if (mounted) {
+        setState(() {
+          isPageLoading = false;
+          isInitialLoading = false;
+          totalItems = properties.length;
+          hasMoreData = properties.length >= itemsPerPage;
+        });
+      }
+    }
     _animationController.forward();
   }
 
@@ -196,21 +201,32 @@ class _PropertyPageState extends State<PropertiesPage>
     try {
       final response = await _propertyTypeController.getAllPropertyTypes();
       if (response['statusCode'] == 200 && mounted) {
-        final data = response['data'];
+        final List<dynamic> data = response['data'] ?? [];
         if (data.isNotEmpty) {
+          final fetchedTypes = data
+              .map<PropertyTypeModel>(
+                (item) => PropertyTypeModel.fromJson(item),
+              )
+              .toList();
+
           setState(() {
-            propertyTypes.addAll(
-              data
-                  .map<PropertyTypeModel>(
-                    (item) => PropertyTypeModel.fromJson(item),
-                  )
-                  .toList(),
-            );
+            // Re-initialize with 'ALL' and fetched types to be absolutely sure
+            propertyTypes = [
+              PropertyTypeModel(
+                id: 'all',
+                typeName: 'ALL',
+                description: 'All types',
+                createdByUserId: '0',
+                updatedByUserId: '0',
+                published: true,
+              ),
+              ...fetchedTypes,
+            ];
           });
         }
       }
     } catch (e) {
-      // Handle error appropriately
+      debugPrint('Error fetching property types: $e');
     }
   }
 
@@ -736,11 +752,8 @@ class _PropertyPageState extends State<PropertiesPage>
                             ),
                           ),
                           Expanded(
-                            child: RefreshIndicator(
-                              color: AppColors.brandPrimary,
-                              onRefresh: _loadData,
-                              child: ListView.builder(
-                                controller: _scrollController,
+                            child: ListView.builder(
+                              controller: _scrollController,
                                 padding: const EdgeInsets.only(
                                   left: 20,
                                   right: 20,
@@ -763,10 +776,9 @@ class _PropertyPageState extends State<PropertiesPage>
                                 },
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
                 ],
               ),
             ),
