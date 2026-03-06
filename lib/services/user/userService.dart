@@ -154,6 +154,55 @@ class UserService implements UserInterface {
   }
 
   @override
+  Future<Map<String, dynamic>> getAllUsersWithParams(
+    String token, {
+    String? roleId,
+    bool? published,
+  }) async {
+    Map<String, dynamic> result = {};
+
+    try {
+      final url = ApiUrls.getAllUsersWithParams;
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          if (roleId != null) "roleId": roleId,
+          if (published != null) "published": published,
+        }),
+      );
+
+      var data = jsonDecode(response.body);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        result = {
+          "statusCode": 200,
+          "message": data['message'],
+          "count": data['count'],
+          "data": data['data'],
+        };
+      } else {
+        result = {
+          "statusCode": 400,
+          "message": data['message'],
+          "data": data['data'],
+        };
+      }
+    } catch (error) {
+      result = {
+        "statusCode": 500,
+        "message": 'internal server error',
+        "data": error,
+      };
+    }
+
+    return result;
+  }
+
+
+  @override
   Future<Map<String, dynamic>> editUser(
     String token,
     UsersModel userModel,

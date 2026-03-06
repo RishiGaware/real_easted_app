@@ -9,34 +9,36 @@ class RoleUtils {
   static bool _isInitialized = false;
 
   // Initialize current user data
-  static Future<void> initializeCurrentUser() async {
-    // Prevent multiple initializations
-    if (_isInitialized) {
+  static Future<void> initializeCurrentUser({bool force = false}) async {
+    // Re-initialize only if forced or not yet initialized
+    if (_isInitialized && !force) {
       return;
     }
 
     try {
       final prefs = await SharedPreferences.getInstance();
+      
+      // Try to get role from 'role' key directly first
+      final directRole = prefs.getString('role');
+      if (directRole != null && directRole.isNotEmpty) {
+        _currentUserRoleName = directRole;
+      }
+
       final currentUser = prefs.getString('currentUser') ?? '';
 
       if (currentUser.isNotEmpty) {
         _currentUserData = jsonDecode(currentUser);
         _currentUserRoleId = _currentUserData?['role'];
 
-        // If we have a role ID, fetch the role name
-        if (_currentUserRoleId != null && _currentUserRoleId!.isNotEmpty) {
+        // If we don't have a role name yet but have an ID, fetch it
+        if ((_currentUserRoleName == null || _currentUserRoleName!.isEmpty) && 
+            _currentUserRoleId != null && _currentUserRoleId!.isNotEmpty) {
           try {
             await _loadRoleName();
           } catch (roleError) {
-            // Don't fail the entire initialization if role loading fails
-            // Set a default role name or leave it null
             _currentUserRoleName = null;
           }
-        } else {
-          // No role ID found or role ID is empty
         }
-      } else {
-        // No currentUser data in SharedPreferences
       }
 
       _isInitialized = true;
@@ -226,6 +228,10 @@ class RoleUtils {
         return isAdmin();
       }
 
+      if (path == '/customers') {
+        return isAdmin() || isExecutive();
+      }
+
       // Property management routes - only for admin, executive
       if (path == '/addNewProperty') {
         return canCreateProperties();
@@ -251,6 +257,10 @@ class RoleUtils {
     // Admin-only routes
     if (route == '/users' || route == '/auth/register') {
       return isAdmin();
+    }
+
+    if (route == '/customers') {
+      return isAdmin() || isExecutive();
     }
 
     // Property management routes - only for admin, executive

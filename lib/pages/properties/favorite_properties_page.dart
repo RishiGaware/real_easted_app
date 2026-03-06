@@ -12,6 +12,8 @@ import 'package:inhabit_realties/pages/widgets/appCard.dart';
 import 'package:inhabit_realties/pages/properties/widgets/property_image_display.dart';
 import 'package:inhabit_realties/pages/properties/property_details_page.dart';
 import 'package:inhabit_realties/Enums/propertyStatusEnum.dart';
+import 'package:inhabit_realties/controllers/propertyType/propertyTypeController.dart';
+import 'package:inhabit_realties/models/propertyType/PropertyTypeModel.dart';
 import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -28,10 +30,16 @@ class _FavoritePropertiesPageState extends State<FavoritePropertiesPage>
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
   final PropertyService _propertyService = PropertyService();
+  final PropertyTypeController _propertyTypeController = PropertyTypeController();
+  final TextEditingController _searchController = TextEditingController();
 
   bool _isLoading = true;
   bool _isInitialLoading = true;
   List<PropertyModel> _favoriteProperties = [];
+  List<PropertyModel> _filteredProperties = [];
+  List<PropertyTypeModel> _propertyTypes = [];
+  String _selectedStatus = 'ALL';
+  String _selectedType = 'ALL';
   String? _errorMessage;
 
   @override
@@ -47,20 +55,27 @@ class _FavoritePropertiesPageState extends State<FavoritePropertiesPage>
 
     // Use post-frame callback to avoid setState during build
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadFavoriteProperties();
+      _loadData();
     });
+  }
+
+  Future<void> _loadData({bool isRefresh = false}) async {
+    await _loadFavoriteProperties(isRefresh: isRefresh);
   }
 
   @override
   void dispose() {
     _animationController.dispose();
+    _searchController.dispose();
     super.dispose();
   }
 
-  Future<void> _loadFavoriteProperties() async {
+  Future<void> _loadFavoriteProperties({bool isRefresh = false}) async {
     setState(() {
       _isLoading = true;
-      _isInitialLoading = true;
+      if (!isRefresh) {
+        _isInitialLoading = true;
+      }
       _errorMessage = null;
     });
 
@@ -74,6 +89,12 @@ class _FavoritePropertiesPageState extends State<FavoritePropertiesPage>
         if (favoriteProperties.isNotEmpty) {
           // Get the actual property details for each favorite
           await _loadPropertyDetails(favoriteProperties);
+        } else {
+          // If no favorites, clear the list
+          setState(() {
+            _favoriteProperties = [];
+            _filteredProperties = [];
+          });
         }
 
         setState(() {
@@ -82,6 +103,9 @@ class _FavoritePropertiesPageState extends State<FavoritePropertiesPage>
         });
         _animationController.forward();
       }
+
+      // Load property types
+      await _loadPropertyTypes();
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -118,11 +142,65 @@ class _FavoritePropertiesPageState extends State<FavoritePropertiesPage>
       if (mounted) {
         setState(() {
           _favoriteProperties = properties;
+          _filteredProperties = properties;
         });
+        _applyFilters();
       }
     } catch (e) {
       // Handle error silently
     }
+  }
+
+  Future<void> _loadPropertyTypes() async {
+    try {
+      final response = await _propertyTypeController.getAllPropertyTypes();
+      if (response['statusCode'] == 200 && response['data'] != null) {
+        final List<PropertyTypeModel> types = (response['data'] as List)
+            .map((json) => PropertyTypeModel.fromJson(json))
+            .toList();
+        if (mounted) {
+          setState(() {
+            _propertyTypes = types;
+          });
+        }
+      }
+    } catch (e) {
+      // Handle error silently
+    }
+  }
+
+  void _applyFilters() {
+    if (!mounted) return;
+    
+    final query = _searchController.text.toLowerCase();
+    
+    setState(() {
+      _filteredProperties = _favoriteProperties.where((property) {
+        // Search filter
+        final nameMatch = property.name.toString().toLowerCase().contains(query);
+        
+        // Also check if property type name matches search query
+        final typeForSearch = _propertyTypes.firstWhere(
+          (t) => t.id == property.propertyTypeId,
+          orElse: () => PropertyTypeModel(id: '', typeName: '', description: '', createdByUserId: '', updatedByUserId: '', published: false),
+        );
+        final typeSearchMatch = typeForSearch.typeName.toLowerCase().contains(query);
+        
+        final finalSearchMatch = nameMatch || typeSearchMatch;
+        
+        // Status filter
+        final statusMatch = _selectedStatus == 'ALL' || 
+            PropertyStatus.getLabel(property.propertyStatus).toUpperCase() == _selectedStatus;
+            
+        // Type filter (from chips)
+        bool typeMatch = _selectedType == 'ALL';
+        if (!typeMatch) {
+          typeMatch = typeForSearch.typeName == _selectedType;
+        }
+
+        return finalSearchMatch && statusMatch && typeMatch;
+      }).toList();
+    });
   }
 
   Future<void> _removeFromFavorites(String propertyId) async {
@@ -164,21 +242,207 @@ class _FavoritePropertiesPageState extends State<FavoritePropertiesPage>
           ),
           onPressed: () => Navigator.of(context).pop(),
         ),
+        actions: [
+          IconButton(
+            icon: Icon(
+              CupertinoIcons.refresh,
+              color: isDark ? AppColors.darkWhiteText : AppColors.lightDarkText,
+            ),
+            onPressed: () {
+              setState(() {
+                _isInitialLoading = true;
+              });
+              _loadData();
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       drawer: const AppDrawer(),
       body: SafeArea(
-        child: ListView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+        child: RefreshIndicator(
+          onRefresh: () async {
+            await _loadData(isRefresh: true);
+          },
+          color: AppColors.brandPrimary,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(
+              parent: BouncingScrollPhysics(),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+            children: [
+              if (_isInitialLoading)
+                _buildLoadingShimmer()
+              else if (_errorMessage != null)
+                _buildErrorWidget()
+              else if (_favoriteProperties.isEmpty)
+                _buildEmptyState()
+              else ...[
+                _buildSearchBar(),
+                const SizedBox(height: 16),
+                _buildStatusFilters(),
+                const SizedBox(height: 12),
+                _buildTypeFilters(),
+                const SizedBox(height: 16),
+                _buildTotalCountRow(),
+                const SizedBox(height: 16),
+                if (_filteredProperties.isEmpty)
+                  _buildNoResultsFound()
+                else
+                  _buildPropertiesList(),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkBackground : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: CupertinoSearchTextField(
+        controller: _searchController,
+        onChanged: (value) => _applyFilters(),
+        placeholder: 'Search favorite properties...',
+        style: TextStyle(
+          color: isDark ? AppColors.darkWhiteText : AppColors.lightDarkText,
+          fontSize: 14,
+        ),
+        placeholderStyle: TextStyle(
+          color: AppColors.greyColor,
+          fontSize: 14,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatusFilters() {
+    final List<String> statuses = ['ALL', 'FOR SALE', 'FOR RENT', 'SOLD'];
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: statuses.map((status) {
+          final isSelected = _selectedStatus == status;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: ChoiceChip(
+              label: Text(status == 'ALL' ? 'All Properties' : status),
+              selected: isSelected,
+              onSelected: (selected) {
+                if (selected) {
+                  setState(() {
+                    _selectedStatus = status;
+                  });
+                  _applyFilters();
+                }
+              },
+              selectedColor: AppColors.brandPrimary.withOpacity(0.2),
+              labelStyle: TextStyle(
+                color: isSelected
+                    ? AppColors.brandPrimary
+                    : (isDark ? AppColors.darkWhiteText : AppColors.lightDarkText),
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                fontSize: 12,
+              ),
+              backgroundColor: isDark ? AppColors.darkBackground : Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(
+                  color: isSelected ? AppColors.brandPrimary : Colors.grey.shade300,
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildTypeFilters() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final List<String> types = ['ALL'];
+    types.addAll(_propertyTypes.map((t) => t.typeName).toList());
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      physics: const BouncingScrollPhysics(),
+      child: Row(
+        children: types.map((type) {
+          final isSelected = _selectedType == type;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: ChoiceChip(
+              label: Text(type == 'ALL' ? 'All Types' : type),
+              selected: isSelected,
+              onSelected: (selected) {
+                if (selected) {
+                  setState(() {
+                    _selectedType = type;
+                  });
+                  _applyFilters();
+                }
+              },
+              selectedColor: AppColors.brandSecondary.withOpacity(0.2),
+              labelStyle: TextStyle(
+                color: isSelected
+                    ? AppColors.brandSecondary
+                    : (isDark ? AppColors.darkWhiteText : AppColors.lightDarkText),
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                fontSize: 12,
+              ),
+              backgroundColor: isDark ? AppColors.darkBackground : Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: BorderSide(
+                  color: isSelected ? AppColors.brandSecondary : Colors.grey.shade300,
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  Widget _buildNoResultsFound() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 40),
+        child: Column(
           children: [
-            if (_isInitialLoading)
-              _buildLoadingShimmer()
-            else if (_errorMessage != null)
-              _buildErrorWidget()
-            else if (_favoriteProperties.isEmpty)
-              _buildEmptyState()
-            else
-              _buildPropertiesList(),
+            Icon(
+              CupertinoIcons.search,
+              size: 64,
+              color: AppColors.greyColor.withOpacity(0.5),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No properties match your filters',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Try adjusting your search or filters to find what you\'re looking for.',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: AppColors.greyColor),
+            ),
           ],
         ),
       ),
@@ -288,15 +552,71 @@ class _FavoritePropertiesPageState extends State<FavoritePropertiesPage>
     );
   }
 
+  Widget _buildTotalCountRow() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkBackground.withOpacity(0.5) : Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isDark ? Colors.white10 : Colors.grey.shade200,
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Icon(
+                CupertinoIcons.list_bullet,
+                size: 18,
+                color: AppColors.brandPrimary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Total: ${_filteredProperties.length} properties',
+                style: TextStyle(
+                  color: isDark ? AppColors.darkWhiteText : AppColors.lightDarkText,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+          if (_filteredProperties.length != _favoriteProperties.length)
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedStatus = 'ALL';
+                  _selectedType = 'ALL';
+                  _searchController.clear();
+                });
+                _applyFilters();
+              },
+              child: Text(
+                'Clear Filters',
+                style: TextStyle(
+                  color: AppColors.brandPrimary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildPropertiesList() {
     return FadeTransition(
       opacity: _fadeAnimation,
       child: ListView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        itemCount: _favoriteProperties.length,
+        itemCount: _filteredProperties.length,
         itemBuilder: (context, index) {
-          final property = _favoriteProperties[index];
+          final property = _filteredProperties[index];
           return _buildPropertyCard(property);
         },
       ),

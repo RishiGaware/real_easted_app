@@ -42,6 +42,20 @@ class _UsersPageState extends State<UsersPage>
   static const int itemsPerPage = 20;
   int currentPage = 0;
   int totalItems = 0;
+  
+  // New: Initial filter values
+  String? initialRoleId;
+  bool? publishedFilter;
+
+  // Stats
+  int totalCount = 0;
+  int publishedCount = 0;
+  int unpublishedCount = 0;
+  bool isStatsLoading = false;
+  bool isCustomerMode = false;
+  String? userRoleId;
+
+
 
   @override
   void initState() {
@@ -72,7 +86,30 @@ class _UsersPageState extends State<UsersPage>
     // Add scroll listener for pagination
     _scrollController.addListener(_onScroll);
 
-    _loadData();
+    // We can't access ModalRoute in initState, so we'll handle it in didChangeDependencies
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    
+    // Extract arguments if it's the first time
+    if (isPageLoading && users.isEmpty) {
+      final routeName = ModalRoute.of(context)?.settings.name;
+      isCustomerMode = routeName == '/customers';
+
+      final args = ModalRoute.of(context)?.settings.arguments;
+      if (args is Map<String, dynamic>) {
+        initialRoleId = args['initialRoleId'];
+        publishedFilter = args['publishedFilter'];
+        
+        if (initialRoleId != null) {
+          // If a specific role is requested, we need to wait for roles to load
+          // then set the correct index. This will be handled in _loadData.
+        }
+      }
+      _loadData();
+    }
   }
 
   // Scroll listener for pagination
@@ -141,16 +178,81 @@ class _UsersPageState extends State<UsersPage>
   }
 
   Future<void> _loadData() async {
-    setState(() => isPageLoading = true);
-    await Future.wait([getAllRoles(), getUsersByRoleId('0')]);
+    if (!mounted) return;
+    setState(() {
+      isPageLoading = true;
+      isStatsLoading = true;
+    });
+    
+    // Fetch stats in parallel
+    final statsFuture = _fetchUserStats();
+    await getAllRoles();
+
+    if (isCustomerMode) {
+      // Find the ID for the "USER" role
+      final userRole = roles.firstWhere(
+        (r) => r.name.toUpperCase() == 'USER',
+        orElse: () => roles.firstWhere((r) => r.name.toUpperCase() == 'CUSTOMER', 
+        orElse: () => RolesModel(id: '', name: '', description: '', createdByUserId: '', updatedByUserId: '', published: false, createdAt: DateTime.now(), updatedAt: DateTime.now())),
+      );
+      if (userRole.id.isNotEmpty) {
+        userRoleId = userRole.id;
+        initialRoleId = userRole.id;
+        
+        // Update stats with the specific role ID
+        await _fetchUserStats(); 
+      }
+    }
+    
+    // Use initialRoleId if provided
+    String roleToFetch = '0';
+    if (initialRoleId != null) {
+      roleToFetch = initialRoleId!;
+      // Find index for the role to highlight it in the horizontal list
+      final index = roles.indexWhere((r) => r.id == initialRoleId);
+      if (index != -1) {
+        setState(() {
+          _roleIndex = index;
+          choosedRole = index;
+        });
+      }
+    }
+    
+    await getUsersByRoleId(roleToFetch);
+    await statsFuture;
     
     setState(() {
       totalItems = users.length;
       hasMoreData = users.length >= itemsPerPage;
+      isPageLoading = false;
     });
     
     _animationController.forward();
   }
+
+  Future<void> _fetchUserStats() async {
+    try {
+      final results = await Future.wait([
+        _userController.getAllUsersWithParams(published: null, roleId: isCustomerMode ? userRoleId : null),
+        _userController.getAllUsersWithParams(published: true, roleId: isCustomerMode ? userRoleId : null),
+        _userController.getAllUsersWithParams(published: false, roleId: isCustomerMode ? userRoleId : null),
+      ]);
+
+      if (mounted) {
+        setState(() {
+          totalCount = results[0]['count'] ?? 0;
+          publishedCount = results[1]['count'] ?? 0;
+          unpublishedCount = results[2]['count'] ?? 0;
+          isStatsLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => isStatsLoading = false);
+      }
+    }
+  }
+
 
   Future<void> getAllRoles() async {
     try {
@@ -194,9 +296,11 @@ class _UsersPageState extends State<UsersPage>
 
   Future<void> getUsersByRoleId(String roleId) async {
     try {
-      final response = roleId == '0'
-          ? await _userController.getAllUsers()
-          : await _userController.getUsersByRoleId(roleId);
+      // Use getAllUsersWithParams to support published filter
+      final response = await _userController.getAllUsersWithParams(
+        roleId: roleId == '0' ? null : roleId,
+        published: publishedFilter,
+      );
 
       if (response['statusCode'] == 200 && mounted) {
         setState(() {
@@ -205,16 +309,8 @@ class _UsersPageState extends State<UsersPage>
               .toList();
           filteredUsers = List.from(users);
         });
-
-        // Debug: Print user role information
-        // print('DEBUG: Loaded ${users.length} users:');
-        // for (var user in users) {
-        //   print(
-        //       'DEBUG: User ${user.firstName} ${user.lastName} has role ID: ${user.role}');
-        // }
       }
     } catch (e) {
-      // print('DEBUG: Error loading users: $e');
       // Handle error appropriately
     } finally {
       if (mounted) {
@@ -262,7 +358,7 @@ class _UsersPageState extends State<UsersPage>
       child: Column(
         children: [
           Text(
-            UsersPageProvider.mainTitle,
+            isCustomerMode ? 'Customers' : UsersPageProvider.mainTitle,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5,
@@ -270,7 +366,7 @@ class _UsersPageState extends State<UsersPage>
           ),
           const SizedBox(height: 4),
           Text(
-            'Manage your team members',
+            isCustomerMode ? 'Manage your customers' : 'Manage your team members',
             style: Theme.of(
               context,
             ).textTheme.bodyMedium?.copyWith(color: Colors.grey),
@@ -281,6 +377,7 @@ class _UsersPageState extends State<UsersPage>
   }
 
   Widget _buildRolesList() {
+    if (isCustomerMode) return const SizedBox.shrink();
     if (roles.isEmpty) return const AppSpinner(size: 24.0, strokeWidth: 2.0);
 
     return Container(
@@ -317,7 +414,127 @@ class _UsersPageState extends State<UsersPage>
     );
   }
 
+  Widget _buildStatsCards() {
+    return Container(
+      height: 100,
+      margin: const EdgeInsets.only(bottom: 16),
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        physics: const BouncingScrollPhysics(),
+        children: [
+          _buildStatCard(
+            'Total Users',
+            totalCount,
+            Icons.people_outline,
+            null,
+            Colors.blue,
+          ),
+          _buildStatCard(
+            'Published',
+            publishedCount,
+            Icons.check_circle_outline,
+            true,
+            Colors.green,
+          ),
+          _buildStatCard(
+            'Unpublished',
+            unpublishedCount,
+            Icons.unpublished_outlined,
+            false,
+            Colors.orange,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard(
+    String title,
+    int count,
+    IconData icon,
+    bool? filterValue,
+    Color color,
+  ) {
+    final bool isActive = publishedFilter == filterValue;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          publishedFilter = filterValue;
+          isPageLoading = true;
+        });
+        getUsersByRoleId(roles[_roleIndex].id);
+      },
+      child: Container(
+        width: 140,
+        margin: const EdgeInsets.only(right: 12),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isActive
+              ? color.withOpacity(0.1)
+              : (isDark
+                  ? AppColors.darkCardBackground
+                  : AppColors.lightCardBackground),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: isActive ? color : Colors.transparent,
+            width: 2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Row(
+              children: [
+                Icon(icon, color: color, size: 20),
+                const Spacer(),
+                if (isStatsLoading)
+                  const SizedBox(
+                    width: 12,
+                    height: 12,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
+                    ),
+                  )
+                else
+                  Text(
+                    count.toString(),
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 12,
+                color: isDark ? Colors.white70 : Colors.black54,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildSearchBar() {
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
       child: AppSearchBar(
@@ -540,9 +757,14 @@ class _UsersPageState extends State<UsersPage>
               physics: const BouncingScrollPhysics(),
               slivers: [
                 SliverToBoxAdapter(
-                  child: Column(children: [_buildHeader(), _buildRolesList()]),
+                  child: Column(children: [
+                    _buildHeader(),
+                    _buildStatsCards(),
+                    _buildRolesList()
+                  ]),
                 ),
                 SliverToBoxAdapter(child: _buildSearchBar()),
+
                 _buildUsersList(context),
                 // Add bottom padding to prevent overflow
                 const SliverToBoxAdapter(

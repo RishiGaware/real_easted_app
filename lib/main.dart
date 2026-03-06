@@ -118,6 +118,7 @@ class _MainAppState extends State<MainApp> {
                     },
                   ),
               '/users': (context) => const UsersPage(),
+              '/customers': (context) => const UsersPage(),
               '/users/edit': (context) => const EditUserPage(),
               '/user_details': (context) {
                 final args = ModalRoute.of(context)!.settings.arguments

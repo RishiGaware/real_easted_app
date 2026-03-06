@@ -38,6 +38,21 @@ class UserController {
     return users;
   }
 
+  Future<Map<String, dynamic>> getAllUsersWithParams({
+    String? roleId,
+    bool? published,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token') ?? "";
+    var users = await _userService.getAllUsersWithParams(
+      token,
+      roleId: roleId,
+      published: published,
+    );
+    return users;
+  }
+
+
   Future<Map<String, dynamic>> editUser(
     String userId,
     String roleId,

@@ -21,7 +21,7 @@ import 'package:inhabit_realties/controllers/lead/leadsController.dart';
 import 'package:inhabit_realties/services/meeting_schedule_service.dart';
 import 'package:inhabit_realties/pages/meetingSchedule/meeting_details_page.dart';
 import 'package:inhabit_realties/models/meeting_schedule_model.dart';
-import 'package:provider/provider.dart';
+import 'package:inhabit_realties/constants/role_utils.dart';
 
 class HomePage extends StatefulWidget {
   final VoidCallback onToggleTheme;
@@ -50,8 +50,18 @@ class _HomePageState extends State<HomePage>
     // Debug SharedPreferences
     _dashboardController.debugTokenAndPreferences();
 
+    // Initialize RoleUtils
+    _initializeRole();
+
     // Lead Analytics API debug print
     _debugLeadAnalyticsApi();
+  }
+
+  Future<void> _initializeRole() async {
+    await RoleUtils.initializeCurrentUser(force: true);
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   @override
@@ -301,9 +311,19 @@ class _HomePageState extends State<HomePage>
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Weekly Performance',
-                          style: Theme.of(context).textTheme.titleLarge,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Weekly Performance',
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                            Icon(
+                              CupertinoIcons.chevron_right_circle,
+                              color: AppColors.brandPrimary,
+                              size: 20,
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 20),
                         Expanded(
@@ -724,26 +744,6 @@ class _HomePageState extends State<HomePage>
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) =>
-                                        const UserAnalyticsPage(),
-                                  ),
-                                );
-                              },
-                              child: _buildStatCard(
-                                CupertinoIcons.star,
-                                'Rating',
-                                _dashboardController.averageRating
-                                    .toStringAsFixed(1),
-                                AppColors.brandTurnary,
-                                _dashboardController.isLoading,
-                                subtitle: 'Average rating',
-                              ),
-                            ),
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
                                         const LeadAnalyticsPage(),
                                   ),
                                 );
@@ -830,19 +830,21 @@ class _HomePageState extends State<HomePage>
                             ),
                           ],
                         ),
-                        const SizedBox(height: 30),
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const SalesAnalyticsPage(),
-                              ),
-                            );
-                          },
-                          child: _buildChart(_dashboardController.isLoading),
-                        ),
+                        if (RoleUtils.isAdmin()) ...[
+                          const SizedBox(height: 30),
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const SalesAnalyticsPage(),
+                                ),
+                              );
+                            },
+                            child: _buildChart(_dashboardController.isLoading),
+                          ),
+                        ],
                         const SizedBox(height: 30),
                         _buildTodaySchedules(_dashboardController.isLoading),
                         const SizedBox(height: 30),

@@ -31,7 +31,6 @@ class AboutSection extends StatelessWidget {
       leading: const Icon(Icons.business, color: AppColors.brandPrimary),
       title: const Text('Inhabit Real Estate'),
       subtitle: const Text('Professional real estate management'),
-      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
       onTap: () {
         // Show app info dialog
       },
@@ -43,7 +42,6 @@ class AboutSection extends StatelessWidget {
       leading: const Icon(Icons.update, color: AppColors.brandPrimary),
       title: const Text('Version'),
       subtitle: const Text('1.0.0'),
-      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
       onTap: () {
         // Check for updates
       },
@@ -55,7 +53,6 @@ class AboutSection extends StatelessWidget {
       leading: const Icon(Icons.support_agent, color: AppColors.brandPrimary),
       title: const Text('Support'),
       subtitle: const Text('Get help and contact us'),
-      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
       onTap: () {
         // Open support page or contact
       },
@@ -67,7 +64,6 @@ class AboutSection extends StatelessWidget {
       leading: const Icon(Icons.privacy_tip, color: AppColors.brandPrimary),
       title: const Text('Privacy Policy'),
       subtitle: const Text('How we protect your data'),
-      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
       onTap: () {
         // Open privacy policy
       },
@@ -79,7 +75,6 @@ class AboutSection extends StatelessWidget {
       leading: const Icon(Icons.description, color: AppColors.brandPrimary),
       title: const Text('Terms of Service'),
       subtitle: const Text('App usage terms and conditions'),
-      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
       onTap: () {
         // Open terms of service
       },

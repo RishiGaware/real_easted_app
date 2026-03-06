@@ -317,12 +317,6 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage> {
             CupertinoIcons.chart_bar,
             AppColors.lightWarning,
           ),
-          _buildStatCard(
-            'Monthly Performance',
-            _formatCurrency(_getCurrentMonthRevenue()),
-            CupertinoIcons.calendar,
-            AppColors.brandTurnary,
-          ),
         ] else if (isSales) ...[
           _buildStatCard(
             'Leads Assigned',
@@ -400,12 +394,18 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage> {
         children: [
           Icon(icon, size: 32, color: color),
           const SizedBox(height: 8),
-          Text(
-            value,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
+          SizedBox(
+            height: 30,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                value,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    ),
+              ),
+            ),
           ),
           const SizedBox(height: 4),
           Text(
@@ -736,15 +736,18 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage> {
                 Expanded(
                   child: Column(
                     children: [
-                      Text(
-                        totalPropertiesSold.toInt().toString(),
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineMedium
-                            ?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.brandPrimary,
-                            ),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          totalPropertiesSold.toInt().toString(),
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleLarge
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.brandPrimary,
+                              ),
+                        ),
                       ),
                       Text(
                         'Properties Sold',
@@ -758,15 +761,18 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage> {
                 Expanded(
                   child: Column(
                     children: [
-                      Text(
-                        _formatCurrency(totalRevenue.toDouble()),
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineMedium
-                            ?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.lightSuccess,
-                            ),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          _formatCurrency(totalRevenue.toDouble()),
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleLarge
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.lightSuccess,
+                              ),
+                        ),
                       ),
                       Text(
                         'Total Revenue',
@@ -780,17 +786,20 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage> {
                 Expanded(
                   child: Column(
                     children: [
-                      Text(
-                        averageSalePrice == 0.0
-                            ? '-'
-                            : _formatCurrency(averageSalePrice.toDouble()),
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineMedium
-                            ?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.lightWarning,
-                            ),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          averageSalePrice == 0.0
+                              ? '-'
+                              : _formatCurrency(averageSalePrice.toDouble()),
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleLarge
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.lightWarning,
+                              ),
+                        ),
                       ),
                       Text(
                         'Average Sale',
@@ -842,15 +851,18 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage> {
                 Expanded(
                   child: Column(
                     children: [
-                      Text(
-                        totalLeadsAssigned.toInt().toString(),
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineMedium
-                            ?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.brandPrimary,
-                            ),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          totalLeadsAssigned.toInt().toString(),
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleLarge
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.brandPrimary,
+                              ),
+                        ),
                       ),
                       Text(
                         'Leads Assigned',
@@ -864,15 +876,18 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage> {
                 Expanded(
                   child: Column(
                     children: [
-                      Text(
-                        totalPropertiesSold.toInt().toString(),
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineMedium
-                            ?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.lightSuccess,
-                            ),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          totalPropertiesSold.toInt().toString(),
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleLarge
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.lightSuccess,
+                              ),
+                        ),
                       ),
                       Text(
                         'Properties Sold',
@@ -886,15 +901,18 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage> {
                 Expanded(
                   child: Column(
                     children: [
-                      Text(
-                        '${conversionRate.toStringAsFixed(1)}%',
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineMedium
-                            ?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.lightWarning,
-                            ),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          '${conversionRate.toStringAsFixed(1)}%',
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleLarge
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.lightWarning,
+                              ),
+                        ),
                       ),
                       Text(
                         'Conversion Rate',
@@ -908,15 +926,18 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage> {
                 Expanded(
                   child: Column(
                     children: [
-                      Text(
-                        _formatCurrency(totalRevenue.toDouble()),
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineMedium
-                            ?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.brandTurnary,
-                            ),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          _formatCurrency(totalRevenue.toDouble()),
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleLarge
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.brandTurnary,
+                              ),
+                        ),
                       ),
                       Text(
                         'Total Revenue',
@@ -967,15 +988,18 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage> {
                 Expanded(
                   child: Column(
                     children: [
-                      Text(
-                        _formatCurrency(totalRevenue.toDouble()),
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineMedium
-                            ?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.brandPrimary,
-                            ),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          _formatCurrency(totalRevenue.toDouble()),
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleLarge
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.brandPrimary,
+                              ),
+                        ),
                       ),
                       Text(
                         'Total Revenue',
@@ -989,15 +1013,18 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage> {
                 Expanded(
                   child: Column(
                     children: [
-                      Text(
-                        totalSales.toInt().toString(),
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineMedium
-                            ?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.lightSuccess,
-                            ),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          totalSales.toInt().toString(),
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleLarge
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.lightSuccess,
+                              ),
+                        ),
                       ),
                       Text(
                         'Properties Sold',
@@ -1011,17 +1038,20 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage> {
                 Expanded(
                   child: Column(
                     children: [
-                      Text(
-                        averageSalePrice == 0.0
-                            ? '-'
-                            : _formatCurrency(averageSalePrice.toDouble()),
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineMedium
-                            ?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.lightWarning,
-                            ),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          averageSalePrice == 0.0
+                              ? '-'
+                              : _formatCurrency(averageSalePrice.toDouble()),
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleLarge
+                              ?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.lightWarning,
+                              ),
+                        ),
                       ),
                       Text(
                         'Average Sale',

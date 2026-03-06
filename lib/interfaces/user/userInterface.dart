@@ -7,4 +7,10 @@ abstract class UserInterface {
   Future<Map<String, dynamic>> getUsersByRoleId(String token, String roleId);
   Future<Map<String, dynamic>> getUsersByUserId(String token, String userId);
   Future<Map<String, dynamic>> editUser(String token, UsersModel user);
+  Future<Map<String, dynamic>> getAllUsersWithParams(
+    String token, {
+    String? roleId,
+    bool? published,
+  });
 }
+

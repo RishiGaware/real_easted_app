@@ -187,6 +187,85 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
   }
 
   // Build loading indicator for pagination
+  Widget _buildTotalCountRow() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final tabName = _showScheduledMeetings ? 'Scheduled by Me' : 'My Meetings';
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkCardBackground.withOpacity(0.5) : Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? Colors.white10 : Colors.grey.shade200,
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Icon(
+                CupertinoIcons.list_bullet,
+                size: 18,
+                color: AppColors.brandPrimary,
+              ),
+              const SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Total $tabName',
+                    style: TextStyle(
+                      color: Colors.grey[500],
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${_filteredMeetings.length} Meetings',
+                    style: TextStyle(
+                      color: isDark ? AppColors.darkWhiteText : AppColors.lightDarkText,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          if (_filteredMeetings.length != _meetings.length)
+            GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedTypeIndex = 0;
+                  _searchQuery = '';
+                  // We don't have a controller for search query here, but _searchQuery is used in filter
+                });
+                _filterMeetingsByType();
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: AppColors.brandPrimary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(15),
+                ),
+                child: Text(
+                  'Reset',
+                  style: TextStyle(
+                    color: AppColors.brandPrimary,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildLoadingIndicator() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -827,6 +906,12 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
                   ),
                 ],
               ),
+            ),
+            
+            // Total meetings count
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              child: _buildTotalCountRow(),
             ),
 
             // Meetings list

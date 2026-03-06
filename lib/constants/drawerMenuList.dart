@@ -9,6 +9,11 @@ class DrawerMenuList {
       'title': 'All Documents',
     },
     {
+      'path': '/customers',
+      'icon': CupertinoIcons.person_2_fill,
+      'title': 'Customers',
+    },
+    {
       'path': '/favorite_properties',
       'icon': CupertinoIcons.heart_fill,
       'title': 'My Favorite Properties',
@@ -33,11 +38,11 @@ class DrawerMenuList {
       'icon': CupertinoIcons.settings_solid,
       'title': 'Settings',
     },
-    {
-      'path': '/auth/register',
-      'icon': CupertinoIcons.person_badge_plus_fill,
-      'title': 'Register User',
-    },
+    // {
+    //   'path': '/auth/register',
+    //   'icon': CupertinoIcons.person_badge_plus_fill,
+    //   'title': 'Register User',
+    // },
     {
       'path': '/auth/logout',
       'icon': CupertinoIcons.square_arrow_left_fill,

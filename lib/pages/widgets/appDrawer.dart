@@ -10,6 +10,9 @@ import 'package:inhabit_realties/controllers/file/userProfilePictureController.d
 import 'package:inhabit_realties/controllers/role/roleController.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+
+
+
 class AppDrawer extends StatefulWidget {
   const AppDrawer({super.key});
 
@@ -193,8 +196,11 @@ class _AppDrawerState extends State<AppDrawer> {
                 }
 
                 final userRole = snapshot.data as String?;
-                print('DEBUG: User role loaded: $userRole'); // Debug log
+                final roleLower = userRole?.toLowerCase().trim() ?? '';
+                final isAdmin = roleLower == 'admin' || roleLower == 'administrator';
+                
                 final filteredMenuItems = _getFilteredMenuItems(userRole);
+
                 print(
                     'DEBUG: Total menu items: ${DrawerMenuList.list.length}'); // Debug log
                 print(
@@ -211,6 +217,7 @@ class _AppDrawerState extends State<AppDrawer> {
                   itemBuilder: (context, index) {
                     final item = filteredMenuItems[index];
                     final isLogout = item['path'] == '/auth/logout';
+
 
                     return Column(
                       children: [
@@ -236,6 +243,7 @@ class _AppDrawerState extends State<AppDrawer> {
                     );
                   },
                 );
+
               },
             ),
           ),
@@ -301,13 +309,17 @@ class _AppDrawerState extends State<AppDrawer> {
     
     final bool isExecutiveLine = roleLower == 'executive';
     final bool isSalesLine = roleLower == 'sales person' || roleLower == 'sales';
-
     return DrawerMenuList.list.where((item) {
       final path = item['path'] as String;
 
       // Admin-only routes
       if (path == '/users' || path == '/auth/register') {
         return isAdmin;
+      }
+
+      // Executive-specific: Show Customers menu
+      if (path == '/customers') {
+        return isExecutiveLine;
       }
 
       // Hide "All Documents" from Executive and Sales
@@ -321,5 +333,8 @@ class _AppDrawerState extends State<AppDrawer> {
       return true;
     }).toList();
   }
-
 }
+
+
+
+
