@@ -21,6 +21,8 @@ import 'package:inhabit_realties/services/property/propertyImageService.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:country_state_city/country_state_city.dart'
     as country_state_selector;
+import 'package:latlong2/latlong.dart';
+import 'package:inhabit_realties/pages/properties/location_picker_page.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -1225,12 +1227,50 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
   }
 
   Widget _buildLocationSection() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: _sectionPadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionHeader(PropertyPageProvider.location),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildSectionHeader(PropertyPageProvider.location),
+              TextButton.icon(
+                onPressed: () async {
+                  LatLng? initialLocation;
+                  if (_lat.text.isNotEmpty && _lng.text.isNotEmpty) {
+                    initialLocation = LatLng(
+                      double.tryParse(_lat.text) ?? 0.0,
+                      double.tryParse(_lng.text) ?? 0.0,
+                    );
+                  }
+
+                  final LatLng? result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => LocationPickerPage(
+                        initialLocation: initialLocation,
+                      ),
+                    ),
+                  );
+
+                  if (result != null) {
+                    setState(() {
+                      _lat.text = result.latitude.toString();
+                      _lng.text = result.longitude.toString();
+                    });
+                  }
+                },
+                icon: const Icon(Icons.map_outlined),
+                label: const Text('SELECT FROM MAP'),
+                style: TextButton.styleFrom(
+                  foregroundColor: isDark ? AppColors.brandSecondary : AppColors.brandPrimary,
+                ),
+              ),
+            ],
+          ),
           FormTextField(
             textEditingController: _lat,
             labelText: PropertyPageProvider.lat,
@@ -1952,7 +1992,7 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
         Container(
           decoration: BoxDecoration(
             border: Border.all(
-              color: Theme.of(context).colorScheme.outline.withOpacity(0.3),
+              color: Theme.of(context).colorScheme.outline.withAlpha(77), // 0.3 * 255
             ),
             borderRadius: BorderRadius.circular(8),
           ),
@@ -1972,7 +2012,7 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
                           vertical: 6,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.brandPrimary.withOpacity(0.1),
+                          color: AppColors.brandPrimary.withAlpha(26), // 0.1 * 255
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: AppColors.brandPrimary,
@@ -2021,7 +2061,7 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
                           ? 'No amenities selected'
                           : '${selectedAmenities.length} amenities selected',
                       style: TextStyle(
-                        color: textColor.withOpacity(0.7),
+                        color: textColor.withAlpha(179), // 0.7 * 255
                         fontSize: 12,
                       ),
                     ),

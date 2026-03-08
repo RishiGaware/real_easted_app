@@ -39,6 +39,7 @@ class _HomePageState extends State<HomePage>
   late Animation<double> _fadeAnimation;
   late Animation<Offset> _slideAnimation;
   late DashboardController _dashboardController;
+  bool _isRoleInitialized = false;
 
   @override
   void initState() {
@@ -60,7 +61,9 @@ class _HomePageState extends State<HomePage>
   Future<void> _initializeRole() async {
     await RoleUtils.initializeCurrentUser(force: true);
     if (mounted) {
-      setState(() {});
+      setState(() {
+        _isRoleInitialized = true;
+      });
     }
   }
 
@@ -315,7 +318,7 @@ class _HomePageState extends State<HomePage>
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'Weekly Performance',
+                              'Monthly Performance',
                               style: Theme.of(context).textTheme.titleLarge,
                             ),
                             Icon(
@@ -330,12 +333,12 @@ class _HomePageState extends State<HomePage>
                           child: LineChart(
                             LineChartData(
                               minX: 0,
-                              maxX: _dashboardController.weekDays.length - 1,
+                              maxX: _dashboardController.monthLabels.length <= 1 ? 1 : (_dashboardController.monthLabels.length - 1).toDouble(),
                               minY: 0,
-                              maxY: _dashboardController.weeklyData.isNotEmpty
-                                  ? _dashboardController.weeklyData
-                                          .reduce((a, b) => a > b ? a : b) +
-                                      2
+                              maxY: _dashboardController.monthlyData.isNotEmpty
+                                  ? _dashboardController.monthlyData
+                                          .reduce((a, b) => a > b ? a : b) * 1.2 +
+                                      1000 // Added buffer for revenue
                                   : 10,
                               gridData: const FlGridData(show: false),
                               titlesData: FlTitlesData(
@@ -357,13 +360,13 @@ class _HomePageState extends State<HomePage>
                                       if (value >= 0 &&
                                           value <
                                               _dashboardController
-                                                  .weekDays.length) {
+                                                  .monthLabels.length) {
                                         return Padding(
                                           padding:
                                               const EdgeInsets.only(top: 8.0),
                                           child: Text(
                                             _dashboardController
-                                                .weekDays[value.toInt()],
+                                                .monthLabels[value.toInt()],
                                             style: const TextStyle(
                                               color: Colors.grey,
                                               fontSize: 12,
@@ -393,10 +396,11 @@ class _HomePageState extends State<HomePage>
                                       (List<LineBarSpot> touchedSpots) {
                                     return touchedSpots
                                         .map((LineBarSpot touchedSpot) {
-                                      final weekDay = _dashboardController
-                                          .weekDays[touchedSpot.x.toInt()];
+                                      final monthLabel = _dashboardController
+                                          .monthLabels[touchedSpot.x.toInt()];
+                                      final formattedValue = _dashboardController.formatCurrencySync(touchedSpot.y);
                                       return LineTooltipItem(
-                                        '$weekDay: ${touchedSpot.y.toStringAsFixed(1)}',
+                                        '$monthLabel: $formattedValue',
                                         const TextStyle(
                                           color: AppColors.brandPrimary,
                                           fontWeight: FontWeight.w600,
@@ -404,7 +408,7 @@ class _HomePageState extends State<HomePage>
                                         ),
                                         children: [
                                           TextSpan(
-                                            text: '\nValue',
+                                            text: '\nRevenue',
                                             style: TextStyle(
                                               color: AppColors.brandPrimary
                                                   .withOpacity(0.7),
@@ -450,10 +454,10 @@ class _HomePageState extends State<HomePage>
                               lineBarsData: [
                                 LineChartBarData(
                                   spots: List.generate(
-                                    _dashboardController.weeklyData.length,
+                                    _dashboardController.monthlyData.length,
                                     (index) => FlSpot(
                                       index.toDouble(),
-                                      _dashboardController.weeklyData[index],
+                                      _dashboardController.monthlyData[index],
                                     ),
                                   ),
                                   isCurved: true,
@@ -716,28 +720,29 @@ class _HomePageState extends State<HomePage>
                                     '${_dashboardController.activeLeads} active',
                               ),
                             ),
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const SalesAnalyticsPage(),
-                                  ),
-                                );
-                              },
-                              child: _buildStatCard(
-                                CupertinoIcons.chart_bar,
-                                'Sales',
-                                _dashboardController.formatCurrencySync(
-                                    _dashboardController.totalSales),
-                                isDark
-                                    ? AppColors.darkWarning
-                                    : AppColors.lightWarning,
-                                _dashboardController.isLoading,
-                                subtitle: 'Total revenue',
+                            if (_isRoleInitialized && RoleUtils.isAdmin())
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const SalesAnalyticsPage(),
+                                    ),
+                                  );
+                                },
+                                child: _buildStatCard(
+                                  CupertinoIcons.chart_bar,
+                                  'Sales',
+                                  _dashboardController.formatCurrencySync(
+                                      _dashboardController.totalSales),
+                                  isDark
+                                      ? AppColors.darkWarning
+                                      : AppColors.lightWarning,
+                                  _dashboardController.isLoading,
+                                  subtitle: 'Total revenue',
+                                ),
                               ),
-                            ),
                             GestureDetector(
                               onTap: () {
                                 Navigator.push(
@@ -830,7 +835,7 @@ class _HomePageState extends State<HomePage>
                             ),
                           ],
                         ),
-                        if (RoleUtils.isAdmin()) ...[
+                        if (_isRoleInitialized && RoleUtils.isAdmin()) ...[
                           const SizedBox(height: 30),
                           GestureDetector(
                             onTap: () {

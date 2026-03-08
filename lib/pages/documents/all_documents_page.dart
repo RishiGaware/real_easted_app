@@ -326,6 +326,7 @@ class _AllDocumentsPageState extends State<AllDocumentsPage> {
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
+                _buildSummarySection(),
                 // Collapsible filter header
                 InkWell(
                   onTap: () {
@@ -790,6 +791,98 @@ class _AllDocumentsPageState extends State<AllDocumentsPage> {
       ),
     );
   }
+  Widget _buildSummarySection() {
+    final filteredUsers = _filteredUsers;
+    final int totalFilteredDocs = _documents.where((doc) {
+      return filteredUsers.any((user) => user.id == doc.userId) &&
+          (_selectedDocumentType == null ||
+              doc.documentTypeId == _selectedDocumentType!.id);
+    }).length;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).scaffoldBackgroundColor,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: _buildSummaryCard(
+              title: 'Total Documents',
+              value: totalFilteredDocs.toString(),
+              icon: Icons.description_outlined,
+              color: AppColors.brandPrimary,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: _buildSummaryCard(
+              title: 'Users',
+              value: filteredUsers.length.toString(),
+              icon: Icons.people_outline,
+              color: AppColors.brandTurnary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryCard({
+    required String title,
+    required String value,
+    required IconData icon,
+    required Color color,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkCardBackground : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x14000000), // Colors.black.withAlpha(20)
+            blurRadius: 8,
+            offset: Offset(0, 2),
+          ),
+        ],
+        border: Border.all(
+          color: color.withAlpha(50),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: color, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: isDark ? Colors.grey[400] : Colors.grey[600],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : Colors.black87,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
 
   @override
   void dispose() {

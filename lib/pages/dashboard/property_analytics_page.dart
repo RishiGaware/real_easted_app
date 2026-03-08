@@ -204,7 +204,7 @@ class _PropertyAnalyticsPageState extends State<PropertyAnalyticsPage>
                 const SizedBox(height: 20),
                 _buildOverviewCards(),
                 const SizedBox(height: 24),
-                _buildDetailedStats(),
+                // _buildDetailedStats(),
                 const SizedBox(height: 24),
                 _buildStatusDistributionChart(),
                 const SizedBox(height: 24),
@@ -332,16 +332,9 @@ class _PropertyAnalyticsPageState extends State<PropertyAnalyticsPage>
           1,
         ),
         _buildAnimatedStatCard(
-          'Active Properties',
-          _analyticsData['activeProperties']?.toString() ?? '0',
-          CupertinoIcons.clock,
-          AppColors.lightWarning,
-          2,
-        ),
-        _buildAnimatedStatCard(
           'Total Value',
           _formatCurrency(_analyticsData['totalValue'] ?? 0),
-          CupertinoIcons.money_dollar,
+          Icons.currency_rupee,
           AppColors.brandTurnary,
           3,
         ),
@@ -398,55 +391,55 @@ class _PropertyAnalyticsPageState extends State<PropertyAnalyticsPage>
     );
   }
 
-  Widget _buildDetailedStats() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Detailed Statistics',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: _buildDetailItem(
-                  'Average Price',
-                  _formatCurrency(_analyticsData['averagePrice'] ?? 0),
-                  Icons.attach_money,
-                  AppColors.brandPrimary,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildDetailItem(
-                  'Recent Properties',
-                  '${_analyticsData['recentProperties'] ?? 0}',
-                  Icons.new_releases,
-                  AppColors.lightSuccess,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildDetailedStats() {
+  //   return Container(
+  //     padding: const EdgeInsets.all(20),
+  //     decoration: BoxDecoration(
+  //       color: Theme.of(context).cardColor,
+  //       borderRadius: BorderRadius.circular(12),
+  //       boxShadow: [
+  //         BoxShadow(
+  //           color: Colors.black.withOpacity(0.1),
+  //           blurRadius: 8,
+  //           offset: const Offset(0, 2),
+  //         ),
+  //       ],
+  //     ),
+  //     child: Column(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         Text(
+  //           'Detailed Statistics',
+  //           style: Theme.of(context).textTheme.titleLarge?.copyWith(
+  //                 fontWeight: FontWeight.bold,
+  //               ),
+  //         ),
+  //         const SizedBox(height: 16),
+  //         Row(
+  //           children: [
+  //             Expanded(
+  //               child: _buildDetailItem(
+  //                 'Average Price',
+  //                 _formatCurrency(_analyticsData['averagePrice'] ?? 0),
+  //                 Icons.currency_rupee,
+  //                 AppColors.brandPrimary,
+  //               ),
+  //             ),
+  //             const SizedBox(width: 16),
+  //             Expanded(
+  //               child: _buildDetailItem(
+  //                 'Recent Properties',
+  //                 '${_analyticsData['recentProperties'] ?? 0}',
+  //                 Icons.new_releases,
+  //                 AppColors.lightSuccess,
+  //               ),
+  //             ),
+  //           ],
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _buildDetailItem(
       String label, String value, IconData icon, Color color) {

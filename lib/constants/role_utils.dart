@@ -110,7 +110,7 @@ class RoleUtils {
 
   // Check if user has admin role
   static bool isAdmin() {
-    return _currentUserRoleName?.toLowerCase() == 'admin';
+    return _currentUserRoleName?.trim().toLowerCase() == 'admin';
   }
 
   // Check if user has executive role

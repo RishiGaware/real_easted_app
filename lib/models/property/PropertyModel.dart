@@ -39,29 +39,27 @@ class PropertyModel {
   /// Deserialize from JSON
   factory PropertyModel.fromJson(Map<String, dynamic> json) {
     try {
-      // Handle propertyTypeId parsing
-      String parsedPropertyTypeId = '';
-      if (json['propertyTypeId'] != null) {
-        if (json['propertyTypeId'] is String) {
-          parsedPropertyTypeId = json['propertyTypeId'];
-        } else if (json['propertyTypeId'] is Map) {
-          parsedPropertyTypeId = json['propertyTypeId']['_id']?.toString() ?? '';
-        }
+      // Helper to parse potential populated ID fields
+      String _parseId(dynamic value) {
+        if (value == null) return '';
+        if (value is String) return value;
+        if (value is Map && value.containsKey('_id')) return value['_id'].toString();
+        return value.toString();
       }
-      
+
       return PropertyModel(
         id: json['_id']?.toString() ?? '',
         name: json['name']?.toString() ?? '',
-        propertyTypeId: parsedPropertyTypeId,
+        propertyTypeId: _parseId(json['propertyTypeId']),
         description: json['description']?.toString() ?? '',
         propertyAddress: Address.fromJson(json['propertyAddress'] ?? {}),
-        owner: json['owner']?.toString() ?? '',
+        owner: _parseId(json['owner']),
         price: (json['price'] ?? 0).toDouble(),
         propertyStatus: json['propertyStatus']?.toString().toUpperCase() ?? '',
         features: Features.fromJson(json['features'] ?? {}),
         listedDate: _parseDateTime(json['listedDate']),
-        createdByUserId: json['createdByUserId']?.toString() ?? '',
-        updatedByUserId: json['updatedByUserId']?.toString() ?? '',
+        createdByUserId: _parseId(json['createdByUserId']),
+        updatedByUserId: _parseId(json['updatedByUserId']),
         published: json['published'] ?? false,
         createdAt: _parseDateTime(json['createdAt']),
         updatedAt: _parseDateTime(json['updatedAt']),

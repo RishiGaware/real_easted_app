@@ -307,7 +307,7 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage> {
           _buildStatCard(
             'Total Revenue',
             _formatCurrency((_analyticsData['totalRevenue'] ?? 0).toDouble()),
-            CupertinoIcons.money_dollar,
+            Icons.currency_rupee,
             AppColors.lightSuccess,
           ),
           _buildStatCard(
@@ -339,7 +339,7 @@ class _SalesAnalyticsPageState extends State<SalesAnalyticsPage> {
           _buildStatCard(
             'Total Revenue',
             _formatCurrency((_analyticsData['totalRevenue'] ?? 0).toDouble()),
-            CupertinoIcons.money_dollar,
+            Icons.currency_rupee,
             AppColors.brandTurnary,
           ),
         ] else ...[

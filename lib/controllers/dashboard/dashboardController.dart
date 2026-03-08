@@ -9,8 +9,8 @@ class DashboardController extends ChangeNotifier {
   Map<String, dynamic> _dashboardData = {};
 
   // Chart Data
-  List<double> _weeklyData = [];
-  List<String> _weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  List<double> _monthlyData = [];
+  List<String> _monthLabels = [];
 
   // Recent Activities
   List<Map<String, dynamic>> _recentActivities = [];
@@ -36,8 +36,8 @@ class DashboardController extends ChangeNotifier {
       (_dashboardData['averageRating'] ?? 0.0).toDouble();
 
   // Chart data getters
-  List<double> get weeklyData => _weeklyData;
-  List<String> get weekDays => _weekDays;
+  List<double> get monthlyData => _monthlyData;
+  List<String> get monthLabels => _monthLabels;
   List<Map<String, dynamic>> get recentActivities => _recentActivities;
   List<Map<String, dynamic>> get todaySchedules => _todaySchedules;
 
@@ -68,8 +68,8 @@ class DashboardController extends ChangeNotifier {
         final data = overviewResponse['data'] as Map<String, dynamic>;
         _dashboardData = data;
 
-        // Generate weekly data
-        _generateWeeklyData();
+        // Fetch monthly data
+        await _fetchMonthlyData(token);
 
         // Load today's schedules
         await _loadTodaySchedules(token);
@@ -96,25 +96,38 @@ class DashboardController extends ChangeNotifier {
     }
   }
 
-  // Generate weekly data
-  void _generateWeeklyData() {
-    final now = DateTime.now();
-    _weeklyData = List.generate(7, (index) {
-      final day = now.subtract(Duration(days: 6 - index));
-
-      // Simulate activity based on day of week
-      double baseActivity = 5.0;
-
-      // Weekend effect
-      if (day.weekday == DateTime.saturday || day.weekday == DateTime.sunday) {
-        baseActivity += 2.0;
+  // Fetch monthly data
+  Future<void> _fetchMonthlyData(String token) async {
+    try {
+      final trendsResponse = await DashboardService.getMonthlyTrends(token);
+      if (trendsResponse['statusCode'] == 200) {
+        final List<dynamic> data = trendsResponse['data'];
+        _monthlyData = [];
+        _monthLabels = [];
+        
+        for (var item in data) {
+          // You can choose which metric to display, e.g., 'sales' or 'revenue'. We'll use 'revenue' here.
+          // Fallback to properties or leads if revenue isn't relevant, but the backend returns 'revenue'.
+          final value = (item['revenue'] ?? 0).toDouble();
+          _monthlyData.add(value);
+          
+          final monthStr = item['month'] as String; // e.g., '2025-03'
+          // Extract just the month part or short month name
+          final parts = monthStr.split('-');
+          if (parts.length >= 2) {
+             final monthIndex = int.tryParse(parts[1]) ?? 1;
+             final months = ['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+             _monthLabels.add(months[monthIndex]);
+          } else {
+             _monthLabels.add(monthStr);
+          }
+        }
       }
-
-      // Add some randomness
-      baseActivity += (index % 3) * 1.5;
-
-      return baseActivity;
-    });
+    } catch (e) {
+      // Fallback if it fails
+      _monthlyData = [0, 0, 0, 0, 0, 0];
+      _monthLabels = ['-', '-', '-', '-', '-', '-'];
+    }
   }
 
   // Load today's schedules
