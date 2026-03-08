@@ -24,10 +24,48 @@ class PurchaseBookingModel {
   final DateTime createdAt;
   final DateTime updatedAt;
 
+  // Property Booking Form Data
+  final String? developer;
+  final String? channelPartnerName;
+  final String? projectName;
+  final String? location;
+  final String? tcfNumber;
+
+  // Buyer Data
+  final String? buyerFullName;
+  final String? buyerAddress;
+  final String? buyerCityPin;
+  final String? buyerMobileNo;
+  final String? buyerEmailId;
+  final String? buyerAadharNo;
+  final String? buyerPanNo;
+
+  // Detailed Property Stats
+  final String? flatNo;
+  final String? towerWing;
+  final String? floorNo;
+  final String? balconies;
+  final String? propertyType;
+  final String? propertyTypeOther;
+  final String? carpetArea;
+  final String? facing;
+  final String? parkingNo;
+  final String? specialFeatures;
+  final String? otherDetails;
+
+  // Financial Granularity
+  final double? bookingAmount;
+  final String? paymentMode;
+  final String? financeMode;
+  final double? totalEmi;
+  final String? transactionChequeNo;
+  final DateTime? bookingDate;
+
   // Populated fields
   final Map<String, dynamic>? property;
   final Map<String, dynamic>? customer;
   final Map<String, dynamic>? assignedSalesperson;
+  final List<dynamic>? documents;
 
   PurchaseBookingModel({
     required this.id,
@@ -54,9 +92,39 @@ class PurchaseBookingModel {
     required this.published,
     required this.createdAt,
     required this.updatedAt,
+    this.developer,
+    this.channelPartnerName,
+    this.projectName,
+    this.location,
+    this.tcfNumber,
+    this.buyerFullName,
+    this.buyerAddress,
+    this.buyerCityPin,
+    this.buyerMobileNo,
+    this.buyerEmailId,
+    this.buyerAadharNo,
+    this.buyerPanNo,
+    this.flatNo,
+    this.towerWing,
+    this.floorNo,
+    this.balconies,
+    this.propertyType,
+    this.propertyTypeOther,
+    this.carpetArea,
+    this.facing,
+    this.parkingNo,
+    this.specialFeatures,
+    this.otherDetails,
+    this.bookingAmount,
+    this.paymentMode,
+    this.financeMode,
+    this.totalEmi,
+    this.transactionChequeNo,
+    this.bookingDate,
     this.property,
     this.customer,
     this.assignedSalesperson,
+    this.documents,
   });
 
   factory PurchaseBookingModel.fromJson(Map<String, dynamic> json) {
@@ -96,9 +164,39 @@ class PurchaseBookingModel {
       published: json['published'] ?? false,
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: DateTime.parse(json['updatedAt']),
-      property: json['property'],
-      customer: json['customer'],
-      assignedSalesperson: json['assignedSalesperson'],
+      developer: json['developer'],
+      channelPartnerName: json['channelPartnerName'],
+      projectName: json['projectName'],
+      location: json['location'],
+      tcfNumber: json['tcfNumber'],
+      buyerFullName: json['buyerFullName'],
+      buyerAddress: json['buyerAddress'],
+      buyerCityPin: json['buyerCityPin'],
+      buyerMobileNo: json['buyerMobileNo'],
+      buyerEmailId: json['buyerEmailId'],
+      buyerAadharNo: json['buyerAadharNo'],
+      buyerPanNo: json['buyerPanNo'],
+      flatNo: json['flatNo'],
+      towerWing: json['towerWing'],
+      floorNo: json['floorNo']?.toString(), // Could be int or string
+      balconies: json['balconies']?.toString(),
+      propertyType: json['propertyType'],
+      propertyTypeOther: json['propertyTypeOther'],
+      carpetArea: json['carpetArea'],
+      facing: json['facing'],
+      parkingNo: json['parkingNo'],
+      specialFeatures: json['specialFeatures'],
+      otherDetails: json['otherDetails'],
+      bookingAmount: json['bookingAmount']?.toDouble(),
+      paymentMode: json['paymentMode'],
+      financeMode: json['financeMode'],
+      totalEmi: json['totalEmi']?.toDouble(),
+      transactionChequeNo: json['transactionChequeNo'],
+      bookingDate: json['bookingDate'] != null ? DateTime.parse(json['bookingDate']) : null,
+      property: json['property'] ?? (json['propertyId'] is Map ? json['propertyId'] : null),
+      customer: json['customer'] ?? (json['customerId'] is Map ? json['customerId'] : null),
+      assignedSalesperson: json['assignedSalesperson'] ?? (json['assignedSalespersonId'] is Map ? json['assignedSalespersonId'] : null),
+      documents: json['documents'] as List<dynamic>?,
     );
   }
 
@@ -129,9 +227,39 @@ class PurchaseBookingModel {
       'published': published,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
+      'developer': developer,
+      'channelPartnerName': channelPartnerName,
+      'projectName': projectName,
+      'location': location,
+      'tcfNumber': tcfNumber,
+      'buyerFullName': buyerFullName,
+      'buyerAddress': buyerAddress,
+      'buyerCityPin': buyerCityPin,
+      'buyerMobileNo': buyerMobileNo,
+      'buyerEmailId': buyerEmailId,
+      'buyerAadharNo': buyerAadharNo,
+      'buyerPanNo': buyerPanNo,
+      'flatNo': flatNo,
+      'towerWing': towerWing,
+      'floorNo': floorNo,
+      'balconies': balconies,
+      'propertyType': propertyType,
+      'propertyTypeOther': propertyTypeOther,
+      'carpetArea': carpetArea,
+      'facing': facing,
+      'parkingNo': parkingNo,
+      'specialFeatures': specialFeatures,
+      'otherDetails': otherDetails,
+      'bookingAmount': bookingAmount,
+      'paymentMode': paymentMode,
+      'financeMode': financeMode,
+      'totalEmi': totalEmi,
+      'transactionChequeNo': transactionChequeNo,
+      'bookingDate': bookingDate?.toIso8601String(),
       'property': property,
       'customer': customer,
       'assignedSalesperson': assignedSalesperson,
+      'documents': documents,
     };
   }
 }
@@ -144,7 +272,7 @@ class InstallmentSchedule {
   final DateTime? paidDate;
   final double lateFees;
   final String? paymentId;
-  final String responsiblePersonId;
+  final dynamic responsiblePersonId; // Changed to dynamic to support map with firstName
   final String? updatedByUserId;
   final DateTime? updatedAt;
 
@@ -171,7 +299,7 @@ class InstallmentSchedule {
           json['paidDate'] != null ? DateTime.parse(json['paidDate']) : null,
       lateFees: (json['lateFees'] ?? 0).toDouble(),
       paymentId: json['paymentId'],
-      responsiblePersonId: json['responsiblePersonId'] ?? '',
+      responsiblePersonId: json['responsiblePersonId'],
       updatedByUserId: json['updatedByUserId'],
       updatedAt:
           json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,

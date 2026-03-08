@@ -8,10 +8,12 @@ import 'package:inhabit_realties/controllers/notification/notificationController
 class ProfileMenuListView extends StatefulWidget {
   final int assignedLeadsCount;
   final bool isAdmin;
+  final bool isSalesPerson;
   const ProfileMenuListView({
     super.key,
     required this.assignedLeadsCount,
     this.isAdmin = false,
+    this.isSalesPerson = false,
   });
 
   @override
@@ -23,8 +25,12 @@ class _ProfileMenuListViewState extends State<ProfileMenuListView> {
   Widget build(BuildContext context) {
     // Filter menu items based on user role
     List<Map<String, dynamic>> menuItems = List.from(ProfileMenuList.list);
-    if (widget.isAdmin) {
-      menuItems.removeWhere((item) => item['title'] == 'Assigned Leads');
+    if (!widget.isSalesPerson) {
+      menuItems.removeWhere((item) => 
+        item['title'] == 'My Purchase Bookings' || 
+        item['title'] == 'My Rental Bookings' ||
+        item['title'] == 'Assigned Leads'
+      );
     }
 
     return ListView.separated(

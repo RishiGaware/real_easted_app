@@ -33,11 +33,11 @@ class DrawerMenuList {
       'icon': CupertinoIcons.house_fill,
       'title': 'All Rental Bookings',
     },
-    {
-      'path': '/settings',
-      'icon': CupertinoIcons.settings_solid,
-      'title': 'Settings',
-    },
+    // {
+    //   'path': '/settings',
+    //   'icon': CupertinoIcons.settings_solid,
+    //   'title': 'Settings',
+    // },
     // {
     //   'path': '/auth/register',
     //   'icon': CupertinoIcons.person_badge_plus_fill,

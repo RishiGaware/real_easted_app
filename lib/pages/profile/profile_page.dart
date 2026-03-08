@@ -174,19 +174,19 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ),
             // Stats Section with Modern Cards
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Your Activity',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const SizedBox(height: 15),
-                  Row(
-                    children: [
-                      if (_userStats['isAdmin'] != true) ...[
+            if (_userStats['isAdmin'] == true || _userStats['isExecutive'] == true || _userStats['isSalesPerson'] == true)
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Your Activity',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 15),
+                    Row(
+                      children: [
                         Expanded(
                           child: GestureDetector(
                             onTap: () => _showActivityDetails(context,
@@ -194,48 +194,49 @@ class _ProfilePageState extends State<ProfilePage> {
                             child: _buildStatCard(
                               context,
                               '${_userStats['totalLeads']}',
-                              'Total Leads (Assigned to you)',
+                              (_userStats['isAdmin'] == true || _userStats['isExecutive'] == true) 
+                                  ? 'Total Leads (Overall)' 
+                                  : 'Total Leads (Assigned)',
                               brandColor,
                               CupertinoIcons.person_2_square_stack_fill,
                             ),
                           ),
                         ),
                         const SizedBox(width: 10),
-                      ],
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => _showActivityDetails(context,
-                              'Active Leads', _userStats['activeLeads'] ?? 0),
-                          child: _buildStatCard(
-                            context,
-                            '${_userStats['activeLeads']}',
-                            'Active Leads',
-                            successColor,
-                            Icons.trending_up_outlined,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: GestureDetector(
-                          onTap: () => _showActivityDetails(
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => _showActivityDetails(context,
+                                'Active Leads', _userStats['activeLeads'] ?? 0),
+                            child: _buildStatCard(
                               context,
-                              'Completed Leads',
-                              _userStats['completedLeads'] ?? 0),
-                          child: _buildStatCard(
-                            context,
-                            '${_userStats['completedLeads']}',
-                            'Completed',
-                            warningColor,
-                            CupertinoIcons.checkmark_circle_fill,
+                              '${_userStats['activeLeads']}',
+                              'Active Leads',
+                              successColor,
+                              Icons.trending_up_outlined,
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: () => _showActivityDetails(
+                                context,
+                                'Completed Leads',
+                                _userStats['completedLeads'] ?? 0),
+                            child: _buildStatCard(
+                              context,
+                              '${_userStats['completedLeads']}',
+                              'Completed',
+                              warningColor,
+                              CupertinoIcons.checkmark_circle_fill,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
             // Menu List with Enhanced Design
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -264,6 +265,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ProfileMenuListView(
                       assignedLeadsCount: _userStats['totalLeads'] ?? 0,
                       isAdmin: _userStats['isAdmin'] ?? false,
+                      isSalesPerson: _userStats['isSalesPerson'] ?? false,
                   ),
                 ],
               ),

@@ -25,6 +25,9 @@ class RentalBookingModel {
   final Map<String, dynamic>? property;
   final Map<String, dynamic>? customer;
   final Map<String, dynamic>? assignedSalesperson;
+  
+  // Attachments
+  final List<dynamic>? documents;
 
   RentalBookingModel({
     required this.id,
@@ -51,9 +54,15 @@ class RentalBookingModel {
     this.property,
     this.customer,
     this.assignedSalesperson,
+    this.documents,
   });
 
   factory RentalBookingModel.fromJson(Map<String, dynamic> json) {
+    print('RentalBookingModel.fromJson parsing bookingId: ${json['bookingId']}');
+    print('propertyId is Map: ${json['propertyId'] is Map}');
+    print('propertyId type: ${json['propertyId'].runtimeType}');
+    print('propertyId keys: ${json['propertyId'] is Map ? (json['propertyId'] as Map).keys : "N/A"}');
+    
     return RentalBookingModel(
       id: json['_id'] ?? '',
       bookingId: json['bookingId'] ?? '',
@@ -85,9 +94,15 @@ class RentalBookingModel {
       published: json['published'] ?? false,
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: DateTime.parse(json['updatedAt']),
-      property: json['property'],
-      customer: json['customer'],
-      assignedSalesperson: json['assignedSalesperson'],
+      property: json['property'] ??
+          (json['propertyId'] is Map ? json['propertyId'] : null),
+      customer: json['customer'] ??
+          (json['customerId'] is Map ? json['customerId'] : null),
+      assignedSalesperson: json['assignedSalesperson'] ??
+          (json['assignedSalespersonId'] is Map
+              ? json['assignedSalespersonId']
+              : null),
+      documents: json['documents'] as List<dynamic>?,
     );
   }
 
@@ -115,8 +130,9 @@ class RentalBookingModel {
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
       'property': property,
-      'customer': assignedSalesperson,
+      'customer': customer,
       'assignedSalesperson': assignedSalesperson,
+      'documents': documents,
     };
   }
 }

@@ -129,29 +129,29 @@ class _UserNameandLeadsState extends State<UserNameandLeads> {
             ),
           ),
           const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildStatItem(context, '${_userStats['totalLeads']}',
-                  'Total Leads', brandColor),
-              Container(
-                height: 24,
-                width: 1,
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                color: textColor.withOpacity(0.1),
-              ),
-              _buildStatItem(context, '${_userStats['activeLeads']}', 'Active',
-                  brandColor),
-              Container(
-                height: 24,
-                width: 1,
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                color: textColor.withOpacity(0.1),
-              ),
-              _buildStatItem(context, '${_userStats['completedLeads']}',
-                  'Completed', brandColor),
-            ],
-          ),
+          // Row(
+          //   mainAxisAlignment: MainAxisAlignment.center,
+          //   children: [
+          //     _buildStatItem(context, '${_userStats['totalLeads']}',
+          //         'Total Leads', brandColor),
+          //     Container(
+          //       height: 24,
+          //       width: 1,
+          //       margin: const EdgeInsets.symmetric(horizontal: 16),
+          //       color: textColor.withOpacity(0.1),
+          //     ),
+          //     _buildStatItem(context, '${_userStats['activeLeads']}', 'Active',
+          //         brandColor),
+          //     Container(
+          //       height: 24,
+          //       width: 1,
+          //       margin: const EdgeInsets.symmetric(horizontal: 16),
+          //       color: textColor.withOpacity(0.1),
+          //     ),
+          //     _buildStatItem(context, '${_userStats['completedLeads']}',
+          //         'Completed', brandColor),
+          //   ],
+          // ),
         ],
       ),
     );

@@ -120,7 +120,8 @@ class RoleUtils {
 
   // Check if user has sales role
   static bool isSales() {
-    return _currentUserRoleName?.toLowerCase() == 'sales';
+    final roleLower = _currentUserRoleName?.toLowerCase();
+    return roleLower == 'sales' || roleLower == 'sales person';
   }
 
   // Check if user has saller role

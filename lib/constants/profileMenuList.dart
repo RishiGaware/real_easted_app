@@ -33,15 +33,15 @@ class ProfileMenuList {
       'trailingNumberLabel': null,
     },
     {
-      'path': '/my_rental_bookings',
-      'icon': CupertinoIcons.house_fill,
-      'title': 'My Rental Bookings',
-      'trailingNumberLabel': null,
-    },
-    {
       'path': '/my_purchase_bookings',
       'icon': CupertinoIcons.bag_fill,
       'title': 'My Purchase Bookings',
+      'trailingNumberLabel': null,
+    },
+    {
+      'path': '/my_rental_bookings',
+      'icon': CupertinoIcons.house_fill,
+      'title': 'My Rental Bookings',
       'trailingNumberLabel': null,
     },
     {

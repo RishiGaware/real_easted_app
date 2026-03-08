@@ -101,18 +101,26 @@ class UserController {
 
       final decodedCurrentUser = jsonDecode(currentUser);
       final userId = decodedCurrentUser['_id'] ?? '';
-      final userRoleId = decodedCurrentUser['role'] ?? '';
+      final roleData = decodedCurrentUser['role'];
 
-      // Get role name by role ID
+      String userRoleId = '';
       String userRoleName = '';
-      try {
-        final roleData = await _roleController.getRoleById(userRoleId);
-        if (roleData['statusCode'] == 200) {
-          userRoleName = roleData['data']['name'] ?? '';
+
+      if (roleData is Map) {
+        userRoleId = roleData['_id']?.toString() ?? roleData['id']?.toString() ?? '';
+        userRoleName = roleData['name']?.toString() ?? '';
+      } else if (roleData is String) {
+        userRoleId = roleData;
+        try {
+          final response = await _roleController.getRoleById(userRoleId);
+          if (response['data'] != null && response['data'] is Map) {
+            userRoleName = response['data']['name']?.toString() ?? '';
+          } else if (response['name'] != null) {
+            userRoleName = response['name'].toString();
+          }
+        } catch (e) {
+          // Error handled silently
         }
-        // Role name fetched successfully
-      } catch (e) {
-        // Error handled silently
       }
 
       Map<String, dynamic> leadsResponse;
@@ -120,9 +128,11 @@ class UserController {
       // Since role fetching is failing, let's check if this is the admin role ID we know
       // Role ID: 68162f63ff2da55b40ca61b8 (from logs)
       bool isAdmin = userRoleId == '68162f63ff2da55b40ca61b8' || userRoleName.toLowerCase() == 'admin';
+      bool isExecutive = userRoleName.toLowerCase() == 'executive';
+      bool isSalesPerson = userRoleId == '6816329cab1624e874bb2dc7' || userRoleName.toLowerCase() == 'sales';
       
-      if (isAdmin) {
-        // Admin: get all leads
+      if (isAdmin || isExecutive) {
+        // Admin/Executive: get all leads
         leadsResponse = await _leadsService.getAllLeads(token, '');
       } else {
         // Sales or unknown: get assigned leads
@@ -152,6 +162,8 @@ class UserController {
           'activeLeads': activeLeads,
           'completedLeads': completedLeads,
           'isAdmin': isAdmin,
+          'isExecutive': isExecutive,
+          'isSalesPerson': isSalesPerson,
         };
       }
 
@@ -159,12 +171,18 @@ class UserController {
         'totalLeads': 0,
         'activeLeads': 0,
         'completedLeads': 0,
+        'isAdmin': isAdmin,
+        'isExecutive': isExecutive,
+        'isSalesPerson': isSalesPerson,
       };
     } catch (e) {
       return {
         'totalLeads': 0,
         'activeLeads': 0,
         'completedLeads': 0,
+        'isAdmin': false,
+        'isExecutive': false,
+        'isSalesPerson': false,
       };
     }
   }
@@ -215,17 +233,26 @@ class UserController {
       }
 
       final decodedCurrentUser = jsonDecode(currentUser);
-      final userRoleId = decodedCurrentUser['role'] ?? '';
+      final roleData = decodedCurrentUser['role'];
 
-      // Get role name by role ID
+      String userRoleId = '';
       String userRoleName = '';
-      try {
-        final roleData = await _roleController.getRoleById(userRoleId);
-        if (roleData['statusCode'] == 200) {
-          userRoleName = roleData['data']['name'] ?? '';
+
+      if (roleData is Map) {
+        userRoleId = roleData['_id']?.toString() ?? roleData['id']?.toString() ?? '';
+        userRoleName = roleData['name']?.toString() ?? '';
+      } else if (roleData is String) {
+        userRoleId = roleData;
+        try {
+          final response = await _roleController.getRoleById(userRoleId);
+          if (response['data'] != null && response['data'] is Map) {
+            userRoleName = response['data']['name']?.toString() ?? '';
+          } else if (response['name'] != null) {
+            userRoleName = response['name'].toString();
+          }
+        } catch (e) {
+          // Error handled silently
         }
-      } catch (e) {
-        // Error handled silently
       }
 
       // Check if user is admin
