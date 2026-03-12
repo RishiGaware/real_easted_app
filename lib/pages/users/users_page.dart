@@ -232,10 +232,22 @@ class _UsersPageState extends State<UsersPage>
 
   Future<void> _fetchUserStats() async {
     try {
+      String? currentRoleId;
+      if (isCustomerMode) {
+        currentRoleId = userRoleId;
+      } else {
+        if (roles.isNotEmpty && _roleIndex >= 0 && _roleIndex < roles.length) {
+          final id = roles[_roleIndex].id;
+          if (id != '0') currentRoleId = id;
+        } else if (initialRoleId != null && initialRoleId != '0') {
+          currentRoleId = initialRoleId;
+        }
+      }
+
       final results = await Future.wait([
-        _userController.getAllUsersWithParams(published: null, roleId: isCustomerMode ? userRoleId : null),
-        _userController.getAllUsersWithParams(published: true, roleId: isCustomerMode ? userRoleId : null),
-        _userController.getAllUsersWithParams(published: false, roleId: isCustomerMode ? userRoleId : null),
+        _userController.getAllUsersWithParams(published: null, roleId: currentRoleId),
+        _userController.getAllUsersWithParams(published: true, roleId: currentRoleId),
+        _userController.getAllUsersWithParams(published: false, roleId: currentRoleId),
       ]);
 
       if (mounted) {
@@ -400,8 +412,12 @@ class _UsersPageState extends State<UsersPage>
                   choosedRole = index;
                   _roleIndex = index;
                   isPageLoading = true;
+                  isStatsLoading = true;
                 });
-                await getUsersByRoleId(roles[index].id);
+                await Future.wait([
+                  getUsersByRoleId(roles[index].id),
+                  _fetchUserStats(),
+                ]);
               },
               child: RoleContainer(
                 isActive: index == _roleIndex,
@@ -416,33 +432,37 @@ class _UsersPageState extends State<UsersPage>
 
   Widget _buildStatsCards() {
     return Container(
-      height: 100,
-      margin: const EdgeInsets.only(bottom: 16),
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        physics: const BouncingScrollPhysics(),
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      child: Row(
         children: [
-          _buildStatCard(
-            'Total Users',
-            totalCount,
-            Icons.people_outline,
-            null,
-            Colors.blue,
+          Expanded(
+            child: _buildStatCard(
+              'Total',
+              totalCount,
+              Icons.people_outline,
+              null,
+              Colors.blue,
+            ),
           ),
-          _buildStatCard(
-            'Published',
-            publishedCount,
-            Icons.check_circle_outline,
-            true,
-            Colors.green,
+          const SizedBox(width: 8),
+          Expanded(
+            child: _buildStatCard(
+              'Pub',
+              publishedCount,
+              Icons.check_circle_outline,
+              true,
+              Colors.green,
+            ),
           ),
-          _buildStatCard(
-            'Unpublished',
-            unpublishedCount,
-            Icons.unpublished_outlined,
-            false,
-            Colors.orange,
+          const SizedBox(width: 8),
+          Expanded(
+            child: _buildStatCard(
+              'Unpub',
+              unpublishedCount,
+              Icons.unpublished_outlined,
+              false,
+              Colors.orange,
+            ),
           ),
         ],
       ),
@@ -468,16 +488,14 @@ class _UsersPageState extends State<UsersPage>
         getUsersByRoleId(roles[_roleIndex].id);
       },
       child: Container(
-        width: 140,
-        margin: const EdgeInsets.only(right: 12),
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
         decoration: BoxDecoration(
           color: isActive
               ? color.withOpacity(0.1)
               : (isDark
                   ? AppColors.darkCardBackground
                   : AppColors.lightCardBackground),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isActive ? color : Colors.transparent,
             width: 2,
@@ -496,7 +514,7 @@ class _UsersPageState extends State<UsersPage>
           children: [
             Row(
               children: [
-                Icon(icon, color: color, size: 20),
+                Icon(icon, color: color, size: 18),
                 const Spacer(),
                 if (isStatsLoading)
                   const SizedBox(
@@ -511,18 +529,20 @@ class _UsersPageState extends State<UsersPage>
                   Text(
                     count.toString(),
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: isDark ? Colors.white : Colors.black87,
                     ),
                   ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Text(
               title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 11,
                 color: isDark ? Colors.white70 : Colors.black54,
                 fontWeight: FontWeight.w500,
               ),

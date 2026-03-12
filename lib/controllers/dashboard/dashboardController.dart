@@ -31,6 +31,8 @@ class DashboardController extends ChangeNotifier {
   int get totalLeads => _dashboardData['totalLeads'] ?? 0;
   int get totalUsers => _dashboardData['totalUsers'] ?? 0;
   int get activeLeads => _dashboardData['activeLeads'] ?? 0;
+  int get newLeads => _dashboardData['newLeads'] ?? 0;
+  int get completedLeads => _dashboardData['completedLeads'] ?? 0;
   int get pendingFollowups => _dashboardData['pendingFollowups'] ?? 0;
   double get averageRating =>
       (_dashboardData['averageRating'] ?? 0.0).toDouble();

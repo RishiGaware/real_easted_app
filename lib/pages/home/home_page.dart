@@ -56,6 +56,13 @@ class _HomePageState extends State<HomePage>
 
     // Lead Analytics API debug print
     _debugLeadAnalyticsApi();
+
+    // Load leads to ensure accurate dashboard counts
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<LeadsController>().loadLeads();
+      }
+    });
   }
 
   Future<void> _initializeRole() async {
@@ -126,6 +133,7 @@ class _HomePageState extends State<HomePage>
     Color color,
     bool isLoading, {
     String? subtitle,
+    List<String>? subtitles,
   }) {
     return AnimatedBuilder(
       animation: _animationController,
@@ -186,12 +194,22 @@ class _HomePageState extends State<HomePage>
                             color: Colors.white,
                           ),
                           const SizedBox(height: 10),
-                          // Subtitle
-                          Container(
-                            height: 16,
-                            width: 90,
-                            color: Colors.white,
-                          ),
+                          // Subtitle or Subtitles
+                          if (subtitles != null && subtitles.isNotEmpty)
+                            ...subtitles.map((_) => Padding(
+                                  padding: const EdgeInsets.only(bottom: 4),
+                                  child: Container(
+                                    height: 16,
+                                    width: 90,
+                                    color: Colors.white,
+                                  ),
+                                ))
+                          else
+                            Container(
+                              height: 16,
+                              width: 90,
+                              color: Colors.white,
+                            ),
                         ],
                       ),
                     )
@@ -250,8 +268,30 @@ class _HomePageState extends State<HomePage>
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 8),
-                        // Subtitle
-                        if (subtitle != null)
+                        // Subtitles
+                        if (subtitles != null && subtitles.isNotEmpty)
+                          ...subtitles.map((sub) => Padding(
+                                padding: const EdgeInsets.only(bottom: 2),
+                                child: Text(
+                                  sub,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodyMedium
+                                      ?.copyWith(
+                                        color: Theme.of(context).brightness ==
+                                                Brightness.dark
+                                            ? AppColors.darkWhiteText
+                                                .withOpacity(0.7)
+                                            : AppColors.lightDarkText
+                                                .withOpacity(0.7),
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ))
+                        else if (subtitle != null)
                           Text(
                             subtitle,
                             style: Theme.of(context)
@@ -333,11 +373,16 @@ class _HomePageState extends State<HomePage>
                           child: LineChart(
                             LineChartData(
                               minX: 0,
-                              maxX: _dashboardController.monthLabels.length <= 1 ? 1 : (_dashboardController.monthLabels.length - 1).toDouble(),
+                              maxX: _dashboardController.monthLabels.length <= 1
+                                  ? 1
+                                  : (_dashboardController.monthLabels.length -
+                                          1)
+                                      .toDouble(),
                               minY: 0,
                               maxY: _dashboardController.monthlyData.isNotEmpty
                                   ? _dashboardController.monthlyData
-                                          .reduce((a, b) => a > b ? a : b) * 1.2 +
+                                              .reduce((a, b) => a > b ? a : b) *
+                                          1.2 +
                                       1000 // Added buffer for revenue
                                   : 10,
                               gridData: const FlGridData(show: false),
@@ -398,7 +443,10 @@ class _HomePageState extends State<HomePage>
                                         .map((LineBarSpot touchedSpot) {
                                       final monthLabel = _dashboardController
                                           .monthLabels[touchedSpot.x.toInt()];
-                                      final formattedValue = _dashboardController.formatCurrencySync(touchedSpot.y);
+                                      final formattedValue =
+                                          _dashboardController
+                                              .formatCurrencySync(
+                                                  touchedSpot.y);
                                       return LineTooltipItem(
                                         '$monthLabel: $formattedValue',
                                         const TextStyle(
@@ -670,170 +718,192 @@ class _HomePageState extends State<HomePage>
                                   ),
                         ),
                         const SizedBox(height: 24),
-                        GridView.count(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 15,
-                          mainAxisSpacing: 15,
-                          childAspectRatio: 0.75,
-                          children: [
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const PropertyAnalyticsPage(),
-                                  ),
-                                );
-                              },
-                              child: _buildStatCard(
-                                CupertinoIcons.home,
-                                'Properties',
-                                _dashboardController.totalProperties.toString(),
-                                AppColors.brandPrimary,
-                                _dashboardController.isLoading,
-                                subtitle:
-                                    '${_dashboardController.soldProperties} sold, ${_dashboardController.unsoldProperties} available',
-                              ),
-                            ),
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const LeadAnalyticsPage(),
-                                  ),
-                                );
-                              },
-                              child: _buildStatCard(
-                                CupertinoIcons.person_2,
-                                'Leads',
-                                _dashboardController.totalLeads.toString(),
-                                isDark
-                                    ? AppColors.darkSuccess
-                                    : AppColors.lightSuccess,
-                                _dashboardController.isLoading,
-                                subtitle:
-                                    '${_dashboardController.activeLeads} active',
-                              ),
-                            ),
-                            if (_isRoleInitialized && RoleUtils.isAdmin())
-                              GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          const SalesAnalyticsPage(),
-                                    ),
-                                  );
-                                },
-                                child: _buildStatCard(
-                                  CupertinoIcons.chart_bar,
-                                  'Sales',
-                                  _dashboardController.formatCurrencySync(
-                                      _dashboardController.totalSales),
-                                  isDark
-                                      ? AppColors.darkWarning
-                                      : AppColors.lightWarning,
-                                  _dashboardController.isLoading,
-                                  subtitle: 'Total revenue',
-                                ),
-                              ),
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const LeadAnalyticsPage(),
-                                  ),
-                                );
-                              },
-                              child: _buildStatCard(
-                                CupertinoIcons.arrow_2_circlepath,
-                                'Followups',
-                                _dashboardController.pendingFollowups
-                                    .toString(),
-                                isDark
-                                    ? AppColors.darkPrimary
-                                    : AppColors.lightPrimary,
-                                _dashboardController.isLoading,
-                                subtitle: 'Pending tasks',
-                              ),
-                            ),
-                            // Today's Notifications
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.pushNamed(context, '/notifications');
-                              },
-                              child: Consumer<NotificationController>(
-                                builder:
-                                    (context, notificationController, child) {
-                                  return _buildStatCard(
-                                    CupertinoIcons.bell,
-                                    'Today\'s Notifications',
-                                    notificationController.todayNotificationsCount
+                        Builder(
+                          builder: (context) {
+                            final leadsController = context.watch<LeadsController>();
+                            
+                            // Use dashboard controller absolute numbers instead of filtering locally
+                            final totalLeads = _dashboardController.totalLeads;
+                            final newLeadsCount = _dashboardController.newLeads;
+                            final activeLeadsCount = _dashboardController.activeLeads;
+                            final completedLeadsCount = _dashboardController.completedLeads;
+
+                            return GridView.count(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 15,
+                              mainAxisSpacing: 15,
+                              childAspectRatio: 0.75,
+                              children: [
+                                GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const PropertyAnalyticsPage(),
+                                      ),
+                                    );
+                                  },
+                                  child: _buildStatCard(
+                                    CupertinoIcons.home,
+                                    'Properties',
+                                    _dashboardController.totalProperties
                                         .toString(),
                                     AppColors.brandPrimary,
-                                    false,
-                                    subtitle: 'New notifications',
-                                  );
-                                },
-                              ),
-                            ),
-                            // Today's Inquiries
-                            GestureDetector(
-                              onTap: () {
-                                widget.onSwitchTab?.call(2); // 2 is the index for Leads tab
-                              },
-                              child: Consumer<LeadsController>(
-                                builder: (context, leadsController, child) {
-                                  return _buildStatCard(
-                                    CupertinoIcons.question_circle,
-                                    'Today\'s Inquiries',
-                                    leadsController.todayInquiriesCount
+                                    _dashboardController.isLoading,
+                                    subtitle:
+                                        '${_dashboardController.soldProperties} sold, ${_dashboardController.unsoldProperties} available',
+                                  ),
+                                ),
+                                GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const LeadAnalyticsPage(),
+                                      ),
+                                    );
+                                  },
+                                  child: _buildStatCard(
+                                    CupertinoIcons.person_2,
+                                    'Total Leads',
+                                    totalLeads.toString(),
+                                    isDark
+                                        ? AppColors.darkSuccess
+                                        : AppColors.lightSuccess,
+                                    leadsController.isLoading ||
+                                        _dashboardController.isLoading,
+                                    subtitles: [
+                                      '• $newLeadsCount New',
+                                      '• $activeLeadsCount Active',
+                                      '• $completedLeadsCount Completed',
+                                    ],
+                                  ),
+                                ),
+                                if (_isRoleInitialized && RoleUtils.isAdmin())
+                                  GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context) =>
+                                              const SalesAnalyticsPage(),
+                                        ),
+                                      );
+                                    },
+                                    child: _buildStatCard(
+                                      CupertinoIcons.chart_bar,
+                                      'Sales',
+                                      _dashboardController.formatCurrencySync(
+                                          _dashboardController.totalSales),
+                                      isDark
+                                          ? AppColors.darkWarning
+                                          : AppColors.lightWarning,
+                                      _dashboardController.isLoading,
+                                      subtitle: 'Total revenue',
+                                    ),
+                                  ),
+                                GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            const LeadAnalyticsPage(),
+                                      ),
+                                    );
+                                  },
+                                  child: _buildStatCard(
+                                    CupertinoIcons.arrow_2_circlepath,
+                                    'Followups',
+                                    _dashboardController.pendingFollowups
                                         .toString(),
-                                    AppColors.lightSuccess,
-                                    false,
-                                    subtitle: 'New leads',
-                                  );
-                                },
-                              ),
-                            ),
-                            // Today's & Tomorrow's Schedules
-                            GestureDetector(
-                              onTap: () {
-                                widget.onSwitchTab?.call(3); // 3 is the index for Meetings tab
-                              },
-                              child: _buildStatCard(
-                                CupertinoIcons.calendar,
-                                'Today\'s Schedules',
-                                _dashboardController.todaySchedulesCount
-                                    .toString(),
-                                AppColors.lightWarning,
-                                _dashboardController.isLoading,
-                                subtitle: 'Meetings scheduled',
-                              ),
-                            ),
-                            GestureDetector(
-                              onTap: () {
-                                widget.onSwitchTab?.call(3); // 3 is the index for Meetings tab
-                              },
-                              child: _buildStatCard(
-                                CupertinoIcons.calendar_today,
-                                'Tomorrow\'s Schedules',
-                                _dashboardController.tomorrowSchedulesCount
-                                    .toString(),
-                                AppColors.lightPrimary,
-                                _dashboardController.isLoading,
-                                subtitle: 'Upcoming meetings',
-                              ),
-                            ),
-                          ],
+                                    isDark
+                                        ? AppColors.darkPrimary
+                                        : AppColors.lightPrimary,
+                                    _dashboardController.isLoading,
+                                    subtitle: 'Pending tasks',
+                                  ),
+                                ),
+                                // Today's Notifications
+                                GestureDetector(
+                                  onTap: () {
+                                    Navigator.pushNamed(
+                                        context, '/notifications');
+                                  },
+                                  child: Consumer<NotificationController>(
+                                    builder: (context, notificationController,
+                                        child) {
+                                      return _buildStatCard(
+                                        CupertinoIcons.bell,
+                                        'Today\'s Notifications',
+                                        notificationController
+                                            .todayNotificationsCount
+                                            .toString(),
+                                        AppColors.brandPrimary,
+                                        false,
+                                        subtitle: 'New notifications',
+                                      );
+                                    },
+                                  ),
+                                ),
+                                // Today's Inquiries
+                                GestureDetector(
+                                  onTap: () {
+                                    widget.onSwitchTab?.call(
+                                        2); // 2 is the index for Leads tab
+                                  },
+                                  child: Consumer<LeadsController>(
+                                    builder: (context, leadsController, child) {
+                                      return _buildStatCard(
+                                        CupertinoIcons.question_circle,
+                                        'Today\'s Inquiries',
+                                        leadsController.todayInquiriesCount
+                                            .toString(),
+                                        AppColors.lightSuccess,
+                                        false,
+                                        subtitle: 'New leads',
+                                      );
+                                    },
+                                  ),
+                                ),
+                                // Today's & Tomorrow's Schedules
+                                GestureDetector(
+                                  onTap: () {
+                                    widget.onSwitchTab?.call(
+                                        3); // 3 is the index for Meetings tab
+                                  },
+                                  child: _buildStatCard(
+                                    CupertinoIcons.calendar,
+                                    'Today\'s Schedules',
+                                    _dashboardController.todaySchedulesCount
+                                        .toString(),
+                                    AppColors.lightWarning,
+                                    _dashboardController.isLoading,
+                                    subtitle: 'Meetings scheduled',
+                                  ),
+                                ),
+                                GestureDetector(
+                                  onTap: () {
+                                    widget.onSwitchTab?.call(
+                                        3); // 3 is the index for Meetings tab
+                                  },
+                                  child: _buildStatCard(
+                                    CupertinoIcons.calendar_today,
+                                    'Tomorrow\'s Schedules',
+                                    _dashboardController.tomorrowSchedulesCount
+                                        .toString(),
+                                    AppColors.lightPrimary,
+                                    _dashboardController.isLoading,
+                                    subtitle: 'Upcoming meetings',
+                                  ),
+                                ),
+                              ],
+                            ); // return GridView.count
+                          },
                         ),
                         if (_isRoleInitialized && RoleUtils.isAdmin()) ...[
                           const SizedBox(height: 30),

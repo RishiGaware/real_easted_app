@@ -41,7 +41,6 @@ class _LeadAnalyticsPageState extends State<LeadAnalyticsPage> {
   void initState() {
     super.initState();
     _loadLeadAnalytics();
-    _fetchRecentLeads();
   }
 
   Future<void> _loadLeadAnalytics() async {
@@ -65,7 +64,7 @@ class _LeadAnalyticsPageState extends State<LeadAnalyticsPage> {
       if (!mounted) return;
       if (response['statusCode'] == 200) {
         setState(() {
-          _analyticsData = response['data'];
+          _analyticsData = response['data'] is Map ? Map<String, dynamic>.from(response['data'] as Map) : {};
           _isLoading = false;
         });
       } else {
@@ -86,54 +85,6 @@ class _LeadAnalyticsPageState extends State<LeadAnalyticsPage> {
       _selectedTimeFrame = timeFrame;
     });
     _loadLeadAnalytics();
-  }
-
-  Future<void> _fetchRecentLeads() async {
-    try {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = true;
-      });
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('token') ?? '';
-      final currentUser = prefs.getString('currentUser') ?? '';
-      final userId =
-          currentUser.isNotEmpty ? (jsonDecode(currentUser)['_id'] ?? '') : '';
-      final now = DateTime.now();
-      final thirtyDaysAgo = now.subtract(const Duration(days: 30));
-      final params = {
-        'createdAt': {
-          ' gte': DateFormat('yyyy-MM-ddTHH:mm:ss.SSSZ').format(thirtyDaysAgo),
-          ' lte': DateFormat('yyyy-MM-ddTHH:mm:ss.SSSZ').format(now),
-        },
-        'sort': {'createdAt': -1},
-        'limit': 5
-      };
-      final result =
-          await _leadsService.getAllLeadsWithParams(token, userId, params);
-      if (!mounted) return;
-      if (result['statusCode'] == 200) {
-        setState(() {
-          _recentLeads = result['data'] is List
-              ? result['data']
-              : (result['data']['value'] ?? []);
-        });
-      } else {
-        setState(() {
-          _recentLeads = [];
-        });
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _recentLeads = [];
-      });
-    } finally {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-      });
-    }
   }
 
   @override
@@ -320,25 +271,25 @@ class _LeadAnalyticsPageState extends State<LeadAnalyticsPage> {
       children: [
         _buildStatCard(
           'Total Leads',
-          _analyticsData['totalLeads']?.toString() ?? '0',
+          (_analyticsData['totalLeads'] ?? 0).toString(),
           CupertinoIcons.person_2,
           AppColors.brandPrimary,
         ),
         _buildStatCard(
           'Recent Leads',
-          _analyticsData['recentLeads']?.toString() ?? '0',
+          (_analyticsData['recentLeads'] ?? 0).toString(),
           CupertinoIcons.clock,
           AppColors.lightSuccess,
         ),
         _buildStatCard(
           'Converted Leads',
-          _analyticsData['convertedLeads']?.toString() ?? '0',
+          (_analyticsData['convertedLeads'] ?? 0).toString(),
           CupertinoIcons.checkmark_circle,
           AppColors.lightWarning,
         ),
         _buildStatCard(
           'Conversion Rate',
-          '${(_analyticsData['conversionRate'] ?? 0).toStringAsFixed(1)}%',
+          '${double.tryParse((_analyticsData['conversionRate'] ?? 0).toString())?.toStringAsFixed(1) ?? "0.0"}%',
           CupertinoIcons.chart_bar,
           AppColors.brandTurnary,
         ),
@@ -387,9 +338,9 @@ class _LeadAnalyticsPageState extends State<LeadAnalyticsPage> {
   }
 
   Widget _buildConversionRateCard() {
-    final conversionRate = _analyticsData['conversionRate'] ?? 0.0;
-    final totalLeads = _analyticsData['totalLeads'] ?? 0;
-    final convertedLeads = _analyticsData['convertedLeads'] ?? 0;
+    final conversionRate = double.tryParse((_analyticsData['conversionRate'] ?? 0).toString()) ?? 0.0;
+    final totalLeads = int.tryParse((_analyticsData['totalLeads'] ?? 0).toString()) ?? 0;
+    final convertedLeads = int.tryParse((_analyticsData['convertedLeads'] ?? 0).toString()) ?? 0;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -518,87 +469,93 @@ class _LeadAnalyticsPageState extends State<LeadAnalyticsPage> {
           const SizedBox(height: 20),
           SizedBox(
             height: 280, // Increased height to accommodate labels
-            child: BarChart(
-              BarChartData(
-                alignment: BarChartAlignment.spaceAround,
-                maxY: statusData.values.isNotEmpty
-                    ? statusData.values
-                        .reduce((a, b) => a > b ? a : b)
-                        .toDouble()
-                    : 1.0,
-                barTouchData: BarTouchData(enabled: false),
-                titlesData: FlTitlesData(
-                  show: true,
-                  rightTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false)),
-                  topTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false)),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 80, // Increased reserved space for labels
-                      getTitlesWidget: (value, meta) {
-                        final labels = statusData.keys.toList();
-                        if (value.toInt() < labels.length) {
-                          final label = labels[value.toInt()];
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 12),
-                            child: Transform.rotate(
-                              angle: -0.5, // Slight rotation to prevent overlap
-                              child: SizedBox(
-                                width: 80, // Fixed width for consistent spacing
-                                child: Text(
-                                  _getChartLabel(label),
-                                  style: const TextStyle(
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w500,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SizedBox(
+                width: statusData.length > 5 ? statusData.length * 80.0 : MediaQuery.of(context).size.width - 80,
+                child: BarChart(
+                  BarChartData(
+                    alignment: BarChartAlignment.spaceAround,
+                    maxY: statusData.values.isNotEmpty
+                        ? statusData.values
+                            .reduce((a, b) => a > b ? a : b)
+                            .toDouble()
+                        : 1.0,
+                    barTouchData: BarTouchData(enabled: false),
+                    titlesData: FlTitlesData(
+                      show: true,
+                      rightTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false)),
+                      topTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false)),
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 80, // Increased reserved space for labels
+                          getTitlesWidget: (value, meta) {
+                            final labels = statusData.keys.toList();
+                            if (value.toInt() < labels.length) {
+                              final label = labels[value.toInt()];
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 12),
+                                child: Transform.rotate(
+                                  angle: -0.5, // Slight rotation to prevent overlap
+                                  child: SizedBox(
+                                    width: 80, // Fixed width for consistent spacing
+                                    child: Text(
+                                      _getChartLabel(label),
+                                      style: const TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
-                                  textAlign: TextAlign.center,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              );
+                            }
+                            return const Text('');
+                          },
+                        ),
+                      ),
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 40,
+                          getTitlesWidget: (value, meta) {
+                            return Text(
+                              value.toInt().toString(),
+                              style: const TextStyle(fontSize: 10),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    borderData: FlBorderData(show: false),
+                    barGroups: statusData.entries
+                        .map((entry) {
+                          final index = statusData.keys.toList().indexOf(entry.key);
+                          return BarChartGroupData(
+                            x: index,
+                            barRods: [
+                              BarChartRodData(
+                                toY: entry.value.toDouble(),
+                                color: _getStatusColor(entry.key),
+                                width: 16, // Reduced bar width for better spacing
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(4),
+                                  topRight: Radius.circular(4),
                                 ),
                               ),
-                            ),
+                            ],
                           );
-                        }
-                        return const Text('');
-                      },
-                    ),
-                  ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 40,
-                      getTitlesWidget: (value, meta) {
-                        return Text(
-                          value.toInt().toString(),
-                          style: const TextStyle(fontSize: 10),
-                        );
-                      },
-                    ),
+                        })
+                        .toList()
+                        .cast<BarChartGroupData>(),
                   ),
                 ),
-                borderData: FlBorderData(show: false),
-                barGroups: statusData.entries
-                    .map((entry) {
-                      final index = statusData.keys.toList().indexOf(entry.key);
-                      return BarChartGroupData(
-                        x: index,
-                        barRods: [
-                          BarChartRodData(
-                            toY: entry.value.toDouble(),
-                            color: _getStatusColor(entry.key),
-                            width: 16, // Reduced bar width for better spacing
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(4),
-                              topRight: Radius.circular(4),
-                            ),
-                          ),
-                        ],
-                      );
-                    })
-                    .toList()
-                    .cast<BarChartGroupData>(),
               ),
             ),
           ),
@@ -633,34 +590,67 @@ class _LeadAnalyticsPageState extends State<LeadAnalyticsPage> {
                 ),
           ),
           const SizedBox(height: 20),
-          SizedBox(
-            height: 200,
-            child: PieChart(
-              PieChartData(
-                sections: designationData.entries
-                    .map((entry) {
-                      final total = designationData.values
-                          .fold(0, (sum, value) => sum + value);
-                      final percentage =
-                          total > 0 ? (entry.value / total) * 100 : 0;
-                      return PieChartSectionData(
-                        value: entry.value.toDouble(),
-                        title:
-                            '${entry.key}\n${percentage.toStringAsFixed(1)}%',
-                        radius: 60,
-                        color: _getDesignationColor(entry.key),
-                        titleStyle: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      );
-                    })
-                    .toList()
-                    .cast<PieChartSectionData>(),
-                centerSpaceRadius: 40,
+          Column(
+            children: [
+              SizedBox(
+                height: 200,
+                child: PieChart(
+                  PieChartData(
+                    sections: designationData.entries
+                        .map((entry) {
+                          final total = designationData.values
+                              .fold(0, (sum, value) => sum + value);
+                          final percentage =
+                              total > 0 ? (entry.value / total) * 100 : 0;
+                          return PieChartSectionData(
+                            value: entry.value.toDouble(),
+                            title: '${percentage.toStringAsFixed(1)}%',
+                            radius: 60,
+                            color: _getDesignationColor(entry.key),
+                            titleStyle: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          );
+                        })
+                        .toList()
+                        .cast<PieChartSectionData>(),
+                    centerSpaceRadius: 40,
+                    sectionsSpace: 2,
+                  ),
+                ),
               ),
-            ),
+              const SizedBox(height: 24),
+              // Legend
+              Wrap(
+                spacing: 16,
+                runSpacing: 12,
+                alignment: WrapAlignment.center,
+                children: designationData.keys.map((designation) {
+                  return Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: _getDesignationColor(designation),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        designation,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              fontWeight: FontWeight.w500,
+                            ),
+                      ),
+                    ],
+                  );
+                }).toList(),
+              ),
+            ],
           ),
         ],
       ),
@@ -735,88 +725,94 @@ class _LeadAnalyticsPageState extends State<LeadAnalyticsPage> {
           const SizedBox(height: 20),
           SizedBox(
             height: 280, // Increased height to accommodate labels
-            child: BarChart(
-              BarChartData(
-                alignment: BarChartAlignment.spaceAround,
-                maxY: followUpData.values.isNotEmpty
-                    ? followUpData.values
-                        .reduce((a, b) => a > b ? a : b)
-                        .toDouble()
-                    : 1.0,
-                barTouchData: BarTouchData(enabled: false),
-                titlesData: FlTitlesData(
-                  show: true,
-                  rightTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false)),
-                  topTitles: const AxisTitles(
-                      sideTitles: SideTitles(showTitles: false)),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 80, // Increased reserved space for labels
-                      getTitlesWidget: (value, meta) {
-                        final labels = followUpData.keys.toList();
-                        if (value.toInt() < labels.length) {
-                          final label = labels[value.toInt()];
-                          return Padding(
-                            padding: const EdgeInsets.only(top: 12),
-                            child: Transform.rotate(
-                              angle: -0.5, // Slight rotation to prevent overlap
-                              child: SizedBox(
-                                width: 80, // Fixed width for consistent spacing
-                                child: Text(
-                                  _getChartLabel(label),
-                                  style: const TextStyle(
-                                    fontSize: 9,
-                                    fontWeight: FontWeight.w500,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SizedBox(
+                width: followUpData.length > 5 ? followUpData.length * 80.0 : MediaQuery.of(context).size.width - 80,
+                child: BarChart(
+                  BarChartData(
+                    alignment: BarChartAlignment.spaceAround,
+                    maxY: followUpData.values.isNotEmpty
+                        ? followUpData.values
+                            .reduce((a, b) => a > b ? a : b)
+                            .toDouble()
+                        : 1.0,
+                    barTouchData: BarTouchData(enabled: false),
+                    titlesData: FlTitlesData(
+                      show: true,
+                      rightTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false)),
+                      topTitles: const AxisTitles(
+                          sideTitles: SideTitles(showTitles: false)),
+                      bottomTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 80, // Increased reserved space for labels
+                          getTitlesWidget: (value, meta) {
+                            final labels = followUpData.keys.toList();
+                            if (value.toInt() < labels.length) {
+                              final label = labels[value.toInt()];
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 12),
+                                child: Transform.rotate(
+                                  angle: -0.5, // Slight rotation to prevent overlap
+                                  child: SizedBox(
+                                    width: 80, // Fixed width for consistent spacing
+                                    child: Text(
+                                      _getChartLabel(label),
+                                      style: const TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
-                                  textAlign: TextAlign.center,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              );
+                            }
+                            return const Text('');
+                          },
+                        ),
+                      ),
+                      leftTitles: AxisTitles(
+                        sideTitles: SideTitles(
+                          showTitles: true,
+                          reservedSize: 40,
+                          getTitlesWidget: (value, meta) {
+                            return Text(
+                              value.toInt().toString(),
+                              style: const TextStyle(fontSize: 10),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                    borderData: FlBorderData(show: false),
+                    barGroups: followUpData.entries
+                        .map((entry) {
+                          final index =
+                              followUpData.keys.toList().indexOf(entry.key);
+                          return BarChartGroupData(
+                            x: index,
+                            barRods: [
+                              BarChartRodData(
+                                toY: entry.value.toDouble(),
+                                color: _getFollowUpStatusColor(entry.key),
+                                width: 16, // Reduced bar width for better spacing
+                                borderRadius: const BorderRadius.only(
+                                  topLeft: Radius.circular(4),
+                                  topRight: Radius.circular(4),
                                 ),
                               ),
-                            ),
+                            ],
                           );
-                        }
-                        return const Text('');
-                      },
-                    ),
-                  ),
-                  leftTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      reservedSize: 40,
-                      getTitlesWidget: (value, meta) {
-                        return Text(
-                          value.toInt().toString(),
-                          style: const TextStyle(fontSize: 10),
-                        );
-                      },
-                    ),
+                        })
+                        .toList()
+                        .cast<BarChartGroupData>(),
                   ),
                 ),
-                borderData: FlBorderData(show: false),
-                barGroups: followUpData.entries
-                    .map((entry) {
-                      final index =
-                          followUpData.keys.toList().indexOf(entry.key);
-                      return BarChartGroupData(
-                        x: index,
-                        barRods: [
-                          BarChartRodData(
-                            toY: entry.value.toDouble(),
-                            color: _getFollowUpStatusColor(entry.key),
-                            width: 16, // Reduced bar width for better spacing
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(4),
-                              topRight: Radius.circular(4),
-                            ),
-                          ),
-                        ],
-                      );
-                    })
-                    .toList()
-                    .cast<BarChartGroupData>(),
               ),
             ),
           ),
@@ -826,7 +822,12 @@ class _LeadAnalyticsPageState extends State<LeadAnalyticsPage> {
   }
 
   Widget _buildRecentLeadsList() {
-    final recentLeadsList = _recentLeads;
+    final recentLeadsList = _analyticsData['recentLeadsList'] is List 
+        ? _analyticsData['recentLeadsList'] as List 
+        : [];
+    
+    // Fall back to empty list if not valid
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -848,7 +849,7 @@ class _LeadAnalyticsPageState extends State<LeadAnalyticsPage> {
             children: [
               Expanded(
                 child: Text(
-                  'Recent Leads (Last 30 Days)',
+                  'Recent Leads',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -875,8 +876,10 @@ class _LeadAnalyticsPageState extends State<LeadAnalyticsPage> {
               children: List.generate(
                 recentLeadsList.length,
                 (index) {
-                  final leadJson =
-                      recentLeadsList[index] as Map<String, dynamic>;
+                  final leadData = recentLeadsList[index];
+                  if (leadData is! Map) return const SizedBox.shrink();
+                  
+                  final leadJson = Map<String, dynamic>.from(leadData);
                   final leadModel = LeadsModel.fromJson(leadJson);
                   return _buildLeadCard(leadModel, index);
                 },
@@ -995,7 +998,6 @@ class _LeadAnalyticsPageState extends State<LeadAnalyticsPage> {
   }
 
   Widget _buildProfileAvatar(LeadsModel lead, int index) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     final avatarColors = [
       AppColors.lightPrimary,
       AppColors.brandPrimary,
@@ -1096,54 +1098,75 @@ class _LeadAnalyticsPageState extends State<LeadAnalyticsPage> {
         return AppColors.brandTurnary;
       case 'LANDLORD':
         return AppColors.brandSecondary;
+      case 'DEVELOPER':
+        return Colors.teal;
+      case 'AGENT':
+        return Colors.orange;
+      case 'BROKER':
+        return Colors.cyan;
+      case 'CONSULTANT':
+        return Colors.indigo;
       default:
-        return AppColors.brandPrimary;
+        // Generate a deterministic color based on the string name if not caught above
+        final int hash = designation.hashCode;
+        final List<Color> palette = [
+          AppColors.brandPrimary,
+          AppColors.brandSecondary,
+          AppColors.brandTurnary,
+          AppColors.lightPrimary,
+          AppColors.lightSuccess,
+          AppColors.lightWarning,
+          Colors.amber,
+          Colors.deepOrange,
+          Colors.pink,
+          Colors.purple,
+          Colors.indigo,
+          Colors.blue,
+          Colors.cyan,
+          Colors.teal,
+          Colors.green,
+          Colors.lightGreen,
+          Colors.lime,
+        ];
+        return palette[hash.abs() % palette.length];
     }
   }
 
-  // --- Add these helper methods to aggregate distributions from _recentLeads ---
+  // --- Use distributions from dashboard analytics ---
   Map<String, int> _getStatusDistribution() {
-    final Map<String, int> statusCounts = {};
-    for (final lead in _recentLeads) {
-      String status = '';
-      if (lead is Map && lead['leadStatus'] is Map) {
-        status = lead['leadStatus']['name'] ?? 'unknown';
-      } else if (lead is Map && lead['leadStatus'] is String) {
-        status = lead['leadStatus'];
-      }
-      if (status.isEmpty) status = 'unknown';
-      statusCounts[status] = (statusCounts[status] ?? 0) + 1;
+    if (_analyticsData.containsKey('statusDistribution') && _analyticsData['statusDistribution'] is Map) {
+      final dist = _analyticsData['statusDistribution'] as Map;
+      return Map<String, int>.fromEntries(
+        dist.entries
+            .where((e) => (e.value as num).toInt() > 0)
+            .map((e) => MapEntry(e.key.toString(), (e.value as num).toInt())),
+      );
     }
-    return statusCounts;
+    return {};
   }
 
   Map<String, int> _getDesignationDistribution() {
-    final Map<String, int> designationCounts = {};
-    for (final lead in _recentLeads) {
-      String designation = '';
-      if (lead is Map && lead['leadDesignation'] is String) {
-        designation = lead['leadDesignation'];
-      }
-      if (designation.isEmpty) designation = 'unknown';
-      designationCounts[designation] =
-          (designationCounts[designation] ?? 0) + 1;
+    if (_analyticsData.containsKey('designationDistribution') && _analyticsData['designationDistribution'] is Map) {
+      final dist = _analyticsData['designationDistribution'] as Map;
+      return Map<String, int>.fromEntries(
+        dist.entries
+            .where((e) => (e.value as num).toInt() > 0)
+            .map((e) => MapEntry(e.key.toString(), (e.value as num).toInt())),
+      );
     }
-    return designationCounts;
+    return {};
   }
 
   Map<String, int> _getFollowUpStatusDistribution() {
-    final Map<String, int> followUpCounts = {};
-    for (final lead in _recentLeads) {
-      String followUp = '';
-      if (lead is Map && lead['followUpStatus'] is Map) {
-        followUp = lead['followUpStatus']['name'] ?? 'unknown';
-      } else if (lead is Map && lead['followUpStatus'] is String) {
-        followUp = lead['followUpStatus'];
-      }
-      if (followUp.isEmpty) followUp = 'unknown';
-      followUpCounts[followUp] = (followUpCounts[followUp] ?? 0) + 1;
+    if (_analyticsData.containsKey('followUpDistribution') && _analyticsData['followUpDistribution'] is Map) {
+      final dist = _analyticsData['followUpDistribution'] as Map;
+      return Map<String, int>.fromEntries(
+        dist.entries
+            .where((e) => (e.value as num).toInt() > 0)
+            .map((e) => MapEntry(e.key.toString(), (e.value as num).toInt())),
+      );
     }
-    return followUpCounts;
+    return {};
   }
 
   /// Truncates long labels to prevent overlap in charts

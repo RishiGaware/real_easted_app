@@ -214,19 +214,23 @@ class _MeetingScheduleAdminPageState extends State<MeetingScheduleAdminPage>
 
       // Apply Date Sort
       filtered.sort((a, b) {
-        DateTime dateA;
-        try {
-          dateA = a.createdAt != null ? DateTime.parse(a.createdAt!) : DateTime.fromMillisecondsSinceEpoch(0);
-        } catch (e) {
-          dateA = DateTime.fromMillisecondsSinceEpoch(0);
+        DateTime getMeetingDateTime(MeetingSchedule m) {
+          try {
+            final date = DateTime.parse(m.meetingDate);
+            int hour = 0, minute = 0;
+            if (m.startTime.isNotEmpty && m.startTime.contains(':')) {
+              final parts = m.startTime.split(':');
+              hour = int.tryParse(parts[0]) ?? 0;
+              minute = int.tryParse(parts[1]) ?? 0;
+            }
+            return DateTime(date.year, date.month, date.day, hour, minute);
+          } catch (e) {
+            return DateTime.fromMillisecondsSinceEpoch(0);
+          }
         }
 
-        DateTime dateB;
-        try {
-          dateB = b.createdAt != null ? DateTime.parse(b.createdAt!) : DateTime.fromMillisecondsSinceEpoch(0);
-        } catch (e) {
-          dateB = DateTime.fromMillisecondsSinceEpoch(0);
-        }
+        DateTime dateA = getMeetingDateTime(a);
+        DateTime dateB = getMeetingDateTime(b);
 
         if (_sortOrder == 'ASC') {
           return dateA.compareTo(dateB);

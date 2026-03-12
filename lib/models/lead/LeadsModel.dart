@@ -114,12 +114,13 @@ class LeadsModel {
   static String _extractObjectId(dynamic value) {
     if (value == null) return '';
     if (value is String) return value;
-    if (value is Map && value.containsKey('\$oid')) {
-      return value['\$oid'] ?? '';
-    }
-    // Handle complex objects that have an _id field
-    if (value is Map && value.containsKey('_id')) {
-      return _extractObjectId(value['_id']);
+    if (value is Map) {
+      if (value.containsKey('\$oid')) {
+        return value['\$oid']?.toString() ?? '';
+      }
+      if (value.containsKey('_id')) {
+        return _extractObjectId(value['_id']);
+      }
     }
     return value.toString();
   }
@@ -131,7 +132,7 @@ class LeadsModel {
     if (value is Map) {
       // Try to extract name field first
       if (value.containsKey('name')) {
-        return value['name'] ?? '';
+        return value['name']?.toString() ?? '';
       }
       // Try to extract enum field
       if (value.containsKey('enum')) {
@@ -139,11 +140,11 @@ class LeadsModel {
         if (enumValue is List && enumValue.isNotEmpty) {
           return enumValue.first.toString();
         }
-        return '';
+        return enumValue?.toString() ?? '';
       }
-      // Try to extract _id field
-      if (value.containsKey('_id')) {
-        return _extractObjectId(value['_id']);
+      // Fallback to value key
+      if (value.containsKey('value')) {
+        return value['value']?.toString() ?? '';
       }
     }
     return value.toString();
@@ -180,8 +181,8 @@ class LeadsModel {
         if (json['userId'] is String) {
           userId = json['userId'];
         } else if (json['userId'] is Map) {
-          userData = Map<String, dynamic>.from(json['userId']);
-          userId = _extractObjectId(json['userId']['_id']);
+          userData = Map<String, dynamic>.from(json['userId'] as Map);
+          userId = _extractObjectId(json['userId']);
         }
       }
 
@@ -193,8 +194,8 @@ class LeadsModel {
         leadInterestedPropertyId:
             _extractObjectId(json['leadInterestedPropertyId']),
         leadStatus: _extractStringValue(json['leadStatus']),
-        referanceFrom: json['referanceFrom'] != null
-            ? ReferenceSourceModel.fromJson(json['referanceFrom'])
+        referanceFrom: (json['referanceFrom'] != null && json['referanceFrom'] is Map)
+            ? ReferenceSourceModel.fromJson(json['referanceFrom'] as Map<String, dynamic>)
             : null,
         followUpStatus: _extractStringValue(json['followUpStatus']),
         referredByUserId: _extractObjectId(json['referredByUserId']),

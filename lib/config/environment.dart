@@ -20,11 +20,9 @@ class EnvironmentConfig {
 
   static String get baseUrl {
     // 🏠 FOR LOCAL DEVELOPMENT - Uncomment the local URL and comment the production URL
-    //return 'http://10.157.94.166:3001/api'; // Local development //my network
-    //return 'http://192.168.0.176:3001/api'; // Local development //office network 1 netu
-    //return 'http://192.168.0.176:3001/api'; // Local development //office network 2
+    // return 'http://192.168.0.110:3001/api'; // Local development //my network
 
-    // 🌐 FOR PRODUCTION - Uncomment the production URL and comment the local URL
+    // return 'http://10.0.2.2:3001/api';
     return 'https://updatedbackend-bqg8.onrender.com/api';
   }
 
