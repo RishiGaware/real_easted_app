@@ -397,7 +397,14 @@ class _AddLeadPageState extends State<AddLeadPage> {
         leadAltEmail: _altEmail.text.isNotEmpty ? _altEmail.text : null,
         leadAltPhoneNumber: _altPhone.text.isNotEmpty ? _altPhone.text : null,
         leadLandLineNumber: _landline.text.isNotEmpty ? _landline.text : null,
-        leadWebsite: _website.text.isNotEmpty ? _website.text : null,
+        leadWebsite: _website.text.isNotEmpty
+            ? (_website.text.startsWith('www.')
+                ? 'https://${_website.text}'
+                : (_website.text.startsWith('http://') ||
+                        _website.text.startsWith('https://')
+                    ? _website.text
+                    : 'https://${_website.text}'))
+            : null,
         note: _note.text.isNotEmpty ? _note.text : null,
         createdByUserId: currentUserId,
         updatedByUserId: currentUserId,
@@ -574,6 +581,12 @@ class _AddLeadPageState extends State<AddLeadPage> {
                   padding: const EdgeInsets.all(8),
                   child: TextFormField(
                     controller: _leadUserSearchController,
+                    enableInteractiveSelection: true,
+                    contextMenuBuilder: (context, editableTextState) {
+                      return AdaptiveTextSelectionToolbar.editableText(
+                        editableTextState: editableTextState,
+                      );
+                    },
                     decoration: const InputDecoration(
                       isDense: true,
                       contentPadding: _dropdownContentPadding,
@@ -650,6 +663,12 @@ class _AddLeadPageState extends State<AddLeadPage> {
                   padding: const EdgeInsets.all(8),
                   child: TextFormField(
                     controller: _interestedPropertySearchController,
+                    enableInteractiveSelection: true,
+                    contextMenuBuilder: (context, editableTextState) {
+                      return AdaptiveTextSelectionToolbar.editableText(
+                        editableTextState: editableTextState,
+                      );
+                    },
                     decoration: const InputDecoration(
                       isDense: true,
                       contentPadding: _dropdownContentPadding,
@@ -834,7 +853,8 @@ class _AddLeadPageState extends State<AddLeadPage> {
             keyboardType: TextInputType.url,
             validator: (value) {
               if (value != null && value.isNotEmpty) {
-                if (!RegExp(r'^https?:\/\/.*').hasMatch(value)) {
+                // Allow both http(s):// and www. prefixes
+                if (!RegExp(r'^(https?:\/\/|www\.).*').hasMatch(value)) {
                   return LeadsPageProvider.websiteValidationMessage;
                 }
               }
@@ -1039,6 +1059,12 @@ class _AddLeadPageState extends State<AddLeadPage> {
               expands: true,
               maxLines: null,
               controller: _assignedToUserSearchController,
+              enableInteractiveSelection: true,
+              contextMenuBuilder: (context, editableTextState) {
+                return AdaptiveTextSelectionToolbar.editableText(
+                  editableTextState: editableTextState,
+                );
+              },
               decoration: InputDecoration(
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(

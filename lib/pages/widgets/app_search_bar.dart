@@ -35,6 +35,12 @@ class AppSearchBar extends StatelessWidget {
         controller: controller,
         onChanged: onChanged,
         style: TextStyle(color: textColor),
+        enableInteractiveSelection: true,
+        contextMenuBuilder: (context, editableTextState) {
+          return AdaptiveTextSelectionToolbar.editableText(
+            editableTextState: editableTextState,
+          );
+        },
         decoration: InputDecoration(
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,

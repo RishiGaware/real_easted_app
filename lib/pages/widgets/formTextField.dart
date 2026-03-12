@@ -50,15 +50,23 @@ class _FormTextFieldState extends State<FormTextField> {
         enabled: widget.enabled,
         keyboardType: widget.keyboardType,
         autofocus: widget.autofocus,
+        enableInteractiveSelection: true,
+        cursorColor: isDark ? AppColors.darkWhiteText : AppColors.brandPrimary,
+        contextMenuBuilder: (context, editableTextState) {
+          return AdaptiveTextSelectionToolbar.editableText(
+            editableTextState: editableTextState,
+          );
+        },
         decoration: InputDecoration(
           contentPadding: const EdgeInsets.symmetric(
-            horizontal: 0,
+            horizontal: 15,
             vertical: 15,
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: _borderRadius,
             borderSide: BorderSide(
-              color: isDark ? AppColors.darkWhiteText : AppColors.lightDarkText,
+              color: isDark ? AppColors.darkWhiteText : AppColors.brandPrimary,
+              width: 2.0,
             ),
           ),
           border: OutlineInputBorder(
@@ -67,24 +75,35 @@ class _FormTextFieldState extends State<FormTextField> {
               color: isDark ? AppColors.darkWhiteText : AppColors.lightDarkText,
             ),
           ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: _borderRadius,
+            borderSide: BorderSide(
+              color: isDark ? AppColors.greyColor.withOpacity(0.5) : AppColors.greyColor.withOpacity(0.3),
+            ),
+          ),
           labelText: widget.labelText,
+          labelStyle: TextStyle(
+            color: isDark ? AppColors.darkWhiteText.withOpacity(0.7) : AppColors.lightDarkText.withOpacity(0.7),
+          ),
           prefixIcon:
-              widget.prefixIcon != null ? Icon(widget.prefixIcon) : null,
-          suffixIcon:
-              widget.suffixIcon != null && isPassword
-                  ? IconButton(
-                    icon: Icon(
-                      _obscureText
-                          ? CupertinoIcons.eye_slash
-                          : CupertinoIcons.eye,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _obscureText = !_obscureText;
-                      });
-                    },
-                  )
-                  : null,
+              widget.prefixIcon != null ? Icon(widget.prefixIcon, size: 22) : null,
+          suffixIcon: isPassword
+              ? IconButton(
+                  icon: Icon(
+                    _obscureText
+                        ? CupertinoIcons.eye_slash
+                        : CupertinoIcons.eye,
+                    size: 22,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _obscureText = !_obscureText;
+                    });
+                  },
+                )
+              : (widget.suffixIcon != null
+                  ? Icon(widget.suffixIcon, size: 22)
+                  : null),
         ),
       ),
     );
