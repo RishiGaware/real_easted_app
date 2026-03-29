@@ -22,9 +22,9 @@ class EnvironmentConfig {
     // 🏠 FOR LOCAL DEVELOPMENT - Uncomment the local URL and comment the production URL
     // return 'http://192.168.0.110:3001/api'; // Local development //my network
 
-    return 'http://10.0.2.2:3001/api'; // Correct for Android Emulator
+    // return 'http://10.0.2.2:3001/api'; // Correct for Android Emulator
     // return 'http://localhost:3001/api';
-    // return 'https://updatedbackend-bqg8.onrender.com/api';
+    return 'https://updatedbackend-bqg8.onrender.com/api';
   }
 
   // Add other environment-specific configurations here

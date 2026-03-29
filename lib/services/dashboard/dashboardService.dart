@@ -9,8 +9,12 @@ class DashboardService {
   // Get dashboard overview
   static Future<Map<String, dynamic>> getDashboardOverview(String token) async {
     try {
+      final clientDate = DateTime.now().toIso8601String();
+      final url = Uri.parse('$baseUrl/dashboard/overview').replace(
+        queryParameters: {'clientDate': clientDate},
+      );
       final response = await http.get(
-        Uri.parse('$baseUrl/dashboard/overview'),
+        url,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -140,8 +144,12 @@ class DashboardService {
   // Get today's schedules
   static Future<Map<String, dynamic>> getTodaySchedules(String token) async {
     try {
+      final clientDate = DateTime.now().toIso8601String();
+      final url = Uri.parse(ApiUrls.getTodaySchedules).replace(
+        queryParameters: {'clientDate': clientDate},
+      );
       final response = await http.get(
-        Uri.parse(ApiUrls.getTodaySchedules),
+        url,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -225,8 +233,12 @@ class DashboardService {
   static Future<Map<String, dynamic>> getLeadConversionRates(
       String token) async {
     try {
+      final clientDate = DateTime.now().toIso8601String();
+      final url = Uri.parse('$baseUrl/dashboard/lead-conversion').replace(
+        queryParameters: {'clientDate': clientDate},
+      );
       final response = await http.get(
-        Uri.parse('$baseUrl/dashboard/lead-conversion'),
+        url,
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
