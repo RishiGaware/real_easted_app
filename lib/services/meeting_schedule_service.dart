@@ -69,8 +69,9 @@ class MeetingScheduleService {
         throw Exception('No user ID found in current user data');
       }
 
+      final clientDate = DateTime.now().toIso8601String();
       final response = await http.get(
-        Uri.parse('${ApiUrls.getMyMeetings}$userId'),
+        Uri.parse('${ApiUrls.getMyMeetings}$userId?clientDate=$clientDate'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
@@ -349,7 +350,8 @@ class MeetingScheduleService {
 
       print('getMeetingScheduleByUserId called with userId: $userId');
       
-      final url = '${ApiUrls.getMeetingScheduleById}$userId';
+      final clientDate = DateTime.now().toIso8601String();
+      final url = '${ApiUrls.getMeetingScheduleById}$userId?clientDate=$clientDate';
       print('URL: $url');
 
       final response = await http.get(
@@ -507,8 +509,9 @@ class MeetingScheduleService {
         url = '${ApiUrls.getMyMeetings}$userId';
       }
 
+      final clientDate = DateTime.now().toIso8601String();
       final response = await http.get(
-        Uri.parse(url),
+        Uri.parse('$url${url.contains('?') ? '&' : '?'}clientDate=$clientDate'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
