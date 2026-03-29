@@ -776,12 +776,8 @@ class _HomePageState extends State<HomePage>
                                         : AppColors.lightSuccess,
                                     leadsController.isLoading ||
                                         _dashboardController.isLoading,
-                                    subtitles: [
-                                      '• $newLeadsCount New',
-                                      '• $activeLeadsCount Active',
-                                      '• $completedLeadsCount Completed',
-                                    ],
                                   ),
+
                                 ),
                                 if (_isRoleInitialized && RoleUtils.isAdmin())
                                   GestureDetector(
@@ -873,8 +869,8 @@ class _HomePageState extends State<HomePage>
                                 // Today's & Tomorrow's Schedules
                                 GestureDetector(
                                   onTap: () {
-                                    widget.onSwitchTab?.call(
-                                        3); // 3 is the index for Meetings tab
+                                    Navigator.pushNamed(
+                                        context, '/meeting_schedules');
                                   },
                                   child: _buildStatCard(
                                     CupertinoIcons.calendar,
@@ -888,8 +884,8 @@ class _HomePageState extends State<HomePage>
                                 ),
                                 GestureDetector(
                                   onTap: () {
-                                    widget.onSwitchTab?.call(
-                                        3); // 3 is the index for Meetings tab
+                                    Navigator.pushNamed(
+                                        context, '/meeting_schedules');
                                   },
                                   child: _buildStatCard(
                                     CupertinoIcons.calendar_today,
@@ -898,7 +894,7 @@ class _HomePageState extends State<HomePage>
                                         .toString(),
                                     AppColors.lightPrimary,
                                     _dashboardController.isLoading,
-                                    subtitle: 'Upcoming meetings',
+                                    subtitle: 'Meetings scheduled',
                                   ),
                                 ),
                               ],

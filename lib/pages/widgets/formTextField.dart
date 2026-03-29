@@ -52,11 +52,6 @@ class _FormTextFieldState extends State<FormTextField> {
         autofocus: widget.autofocus,
         enableInteractiveSelection: true,
         cursorColor: isDark ? AppColors.darkWhiteText : AppColors.brandPrimary,
-        contextMenuBuilder: (context, editableTextState) {
-          return AdaptiveTextSelectionToolbar.editableText(
-            editableTextState: editableTextState,
-          );
-        },
         decoration: InputDecoration(
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 15,

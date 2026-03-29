@@ -7,68 +7,64 @@ import '../../pages/widgets/appSnackBar.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 
 class MapRedirectionService {
+  /// Static method to build the destination string or coordinates for the URL
+  static String _getDestination(Address address) {
+    if (address.location.lat != 0.0 && address.location.lng != 0.0) {
+      return '${address.location.lat},${address.location.lng}';
+    }
+    return Uri.encodeComponent(_buildAddressString(address));
+  }
+
   /// Redirect to Google Maps with directions from current location to property
   static Future<bool> redirectToGoogleMaps(Address propertyAddress) async {
     try {
-      // Get current location
-      final currentPosition = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 10),
-      );
+      final destination = _getDestination(propertyAddress);
 
-      // Build the destination address
-      final destinationAddress = _buildAddressString(propertyAddress);
-
-      // Create Google Maps URL with directions - try multiple formats for better compatibility
-      final url1 = Uri.parse('https://www.google.com/maps/dir/'
-          '${currentPosition.latitude},${currentPosition.longitude}/'
-          '${Uri.encodeComponent(destinationAddress)}');
-
-      final url2 = Uri.parse('https://maps.google.com/maps?daddr='
-          '${Uri.encodeComponent(destinationAddress)}'
-          '&saddr=${currentPosition.latitude},${currentPosition.longitude}');
-
-      // Try first format
-      bool launched = await _launchUrl(url1);
-
-      // If first format fails, try second format
-      if (!launched) {
-        launched = await _launchUrl(url2);
+      // 1. Try Android Native Navigation Scheme
+      if (Platform.isAndroid) {
+        final androidUrl = Uri.parse('google.navigation:q=$destination&mode=d');
+        if (await canLaunchUrl(androidUrl)) {
+          return await launchUrl(androidUrl);
+        }
       }
 
-      return launched;
+      // 2. Try iOS Google Maps App Scheme
+      if (Platform.isIOS) {
+        final iosUrl = Uri.parse(
+            'comgooglemaps://?daddr=$destination&directionsmode=driving');
+        if (await canLaunchUrl(iosUrl)) {
+          return await launchUrl(iosUrl);
+        }
+      }
+
+      // 3. Fallback to Universal HTTPS Link
+      // We OMIT origin specifically to let the Google Maps app/web use its internal "My Location"
+      final url = Uri.parse('https://www.google.com/maps/dir/?api=1'
+          '&destination=$destination'
+          '&travelmode=driving');
+
+      return await _launchUrl(url);
     } catch (e) {
-      // If current location fails, just show the destination
       return await _redirectToGoogleMapsDestination(propertyAddress);
     }
   }
 
-  /// Redirect to Google Maps showing only the destination
+  /// Redirect to Google Maps showing only the destination (Simpler fallback)
   static Future<bool> _redirectToGoogleMapsDestination(
       Address propertyAddress) async {
     try {
-      final destinationAddress = _buildAddressString(propertyAddress);
+      final destination = _getDestination(propertyAddress);
 
-      // Try multiple Google Maps URL formats for better compatibility
-      final url1 = Uri.parse('https://www.google.com/maps/search/'
-          '${Uri.encodeComponent(destinationAddress)}');
+      // Simple search/view URL
+      final url = Uri.parse('https://www.google.com/maps/search/?api=1'
+          '&query=$destination');
 
-      final url2 = Uri.parse('https://maps.google.com/maps?q='
-          '${Uri.encodeComponent(destinationAddress)}');
-
-      // Try first format
-      bool launched = await _launchUrl(url1);
-
-      // If first format fails, try second format
-      if (!launched) {
-        launched = await _launchUrl(url2);
-      }
-
-      return launched;
+      return await _launchUrl(url);
     } catch (e) {
       return false;
     }
   }
+
 
   /// Redirect to Apple Maps with directions (iOS only)
   static Future<bool> redirectToAppleMaps(Address propertyAddress) async {
@@ -83,13 +79,12 @@ class MapRedirectionService {
         timeLimit: const Duration(seconds: 10),
       );
 
-      // Build the destination address
-      final destinationAddress = _buildAddressString(propertyAddress);
+      final destination = _getDestination(propertyAddress);
 
       // Create Apple Maps URL with directions
       final url = Uri.parse('http://maps.apple.com/?saddr='
           '${currentPosition.latitude},${currentPosition.longitude}'
-          '&daddr=${Uri.encodeComponent(destinationAddress)}'
+          '&daddr=$destination'
           '&dirflg=d' // driving directions
           );
 
@@ -108,9 +103,8 @@ class MapRedirectionService {
     }
 
     try {
-      final destinationAddress = _buildAddressString(propertyAddress);
-      final url = Uri.parse(
-          'http://maps.apple.com/?q=${Uri.encodeComponent(destinationAddress)}');
+      final destination = _getDestination(propertyAddress);
+      final url = Uri.parse('http://maps.apple.com/?q=$destination');
 
       return await _launchUrl(url);
     } catch (e) {

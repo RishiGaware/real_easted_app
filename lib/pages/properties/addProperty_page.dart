@@ -780,11 +780,23 @@ class _AddPropertyPageState extends State<AddPropertyPage> {
                     );
                   }
                   
+                  final String? city = _city.text.isNotEmpty ? _city.text : null;
+                  final String? state = _state.text.isNotEmpty ? _state.text : null;
+                  final String? country = _country.text.isNotEmpty ? _country.text : null;
+                  
+                  final List<String> addressParts = [];
+                  if (city != null) addressParts.add(city);
+                  if (state != null) addressParts.add(state);
+                  if (country != null) addressParts.add(country);
+                  
+                  final String? initialAddress = addressParts.isNotEmpty ? addressParts.join(', ') : null;
+
                   final LatLng? result = await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => LocationPickerPage(
                         initialLocation: initialLocation,
+                        initialAddress: initialAddress,
                       ),
                     ),
                   );

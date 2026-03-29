@@ -102,7 +102,6 @@ class PropertyModel {
   /// Serialize to JSON
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
       'name': name,
       'propertyTypeId': propertyTypeId,
       'description': description,

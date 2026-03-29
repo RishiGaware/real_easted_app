@@ -6,6 +6,7 @@ class RolesModel {
   final String createdByUserId;
   final String updatedByUserId;
   final bool published;
+  final int userCount;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -16,9 +17,11 @@ class RolesModel {
     required this.createdByUserId,
     required this.updatedByUserId,
     required this.published,
+    this.userCount = 0,
     required this.createdAt,
     required this.updatedAt,
   });
+
 
   /// Deserialize from JSON
   factory RolesModel.fromJson(Map<String, dynamic> json) {
@@ -29,6 +32,7 @@ class RolesModel {
       createdByUserId: json['createdByUserId'] ?? '',
       updatedByUserId: json['updatedByUserId'] ?? '',
       published: json['published'] ?? false,
+      userCount: json['userCount'] ?? 0,
       createdAt: DateTime.parse(json['createdAt']),
       updatedAt: DateTime.parse(json['updatedAt']),
     );

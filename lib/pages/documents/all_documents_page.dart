@@ -229,11 +229,6 @@ class _AllDocumentsPageState extends State<AllDocumentsPage> {
                   child: TextFormField(
                     controller: userSearchController,
                     enableInteractiveSelection: true,
-                    contextMenuBuilder: (context, editableTextState) {
-                      return AdaptiveTextSelectionToolbar.editableText(
-                        editableTextState: editableTextState,
-                      );
-                    },
                     decoration: const InputDecoration(
                       isDense: true,
                       contentPadding:
@@ -396,11 +391,6 @@ class _AllDocumentsPageState extends State<AllDocumentsPage> {
             height: 48,
             child: TextField(
               enableInteractiveSelection: true,
-              contextMenuBuilder: (context, editableTextState) {
-                return AdaptiveTextSelectionToolbar.editableText(
-                  editableTextState: editableTextState,
-                );
-              },
               decoration: const InputDecoration(
                 hintText: 'Search users...',
                 isDense: true,
@@ -531,11 +521,6 @@ class _AllDocumentsPageState extends State<AllDocumentsPage> {
                   child: TextFormField(
                     controller: _documentTypeSearchController,
                     enableInteractiveSelection: true,
-                    contextMenuBuilder: (context, editableTextState) {
-                      return AdaptiveTextSelectionToolbar.editableText(
-                        editableTextState: editableTextState,
-                      );
-                    },
                     decoration: const InputDecoration(
                       isDense: true,
                       contentPadding:

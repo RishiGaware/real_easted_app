@@ -681,7 +681,8 @@ class _EditUserPageState extends State<EditUserPage> {
             ],
           ),
           body: SafeArea(
-            child: Form(
+            child: SelectionArea(
+              child: Form(
               key: _formKey,
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
@@ -700,12 +701,16 @@ class _EditUserPageState extends State<EditUserPage> {
                       _buildSecuritySection(),
                       _buildSubmitButton(),
                     ],
+                    ),
                   ),
                 ),
               ),
             ),
           ),
         ),
+
+
+
         if (isLoading)
           Container(
             color: Colors.black.withOpacity(0.3),

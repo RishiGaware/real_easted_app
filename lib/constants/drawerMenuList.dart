@@ -21,7 +21,7 @@ class DrawerMenuList {
     {
       'path': '/meeting_schedules',
       'icon': CupertinoIcons.calendar,
-      'title': 'Meeting Schedules',
+      'title': 'All Meeting Schedule',
     },
     {
       'path': '/all_purchase_bookings',

@@ -5,11 +5,15 @@ class DrawerListTile extends StatefulWidget {
   final String path;
   final IconData icon;
   final String title;
+  final String? subtitle;
+  final Widget? trailing;
   const DrawerListTile({
     super.key,
     required this.path,
     required this.icon,
     required this.title,
+    this.subtitle,
+    this.trailing,
   });
 
   @override
@@ -71,6 +75,16 @@ class _DrawerListTileState extends State<DrawerListTile> {
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                 ),
           ),
+          subtitle: widget.subtitle != null
+              ? Text(
+                  widget.subtitle!,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: textColor.withOpacity(0.6),
+                        fontSize: 10,
+                      ),
+                )
+              : null,
+          trailing: widget.trailing,
         ),
       ),
     );

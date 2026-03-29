@@ -64,11 +64,6 @@ class _AnimatedSearchBarState extends State<AnimatedSearchBar> {
                   focusNode: _focusNode,
                   style: TextStyle(color: textColor),
                   enableInteractiveSelection: true,
-                  contextMenuBuilder: (context, editableTextState) {
-                    return AdaptiveTextSelectionToolbar.editableText(
-                      editableTextState: editableTextState,
-                    );
-                  },
                   decoration: InputDecoration(
                     border: InputBorder.none,
                     hintText: "Type to search...",

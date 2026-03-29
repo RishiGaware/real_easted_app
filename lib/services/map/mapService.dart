@@ -165,4 +165,18 @@ class MapService {
     }
     return null;
   }
+
+  /// Get coordinates from address search string
+  static Future<LatLng?> getCoordinatesFromAddressString(String address) async {
+    try {
+      final locations = await locationFromAddress(address);
+      if (locations.isNotEmpty) {
+        final location = locations.first;
+        return LatLng(location.latitude, location.longitude);
+      }
+    } catch (e) {
+      // Error handled silently
+    }
+    return null;
+  }
 }

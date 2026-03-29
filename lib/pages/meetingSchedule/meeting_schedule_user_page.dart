@@ -42,6 +42,7 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
   bool _isLoading = true;
   String? _error;
   bool _showScheduledMeetings = false;
+  Map<String, dynamic> _countsMap = {};
 
   // Meeting type filter
   List<String> _meetingTypes = [
@@ -312,6 +313,32 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
     });
   }
 
+  void _calculateCounts(List<MeetingSchedule> meetings) {
+    int scheduled = 0;
+    int completed = 0;
+    int cancelled = 0;
+    int rescheduled = 0;
+    int missed = 0;
+
+    for (var m in meetings) {
+      String status = m.getStatusName().toLowerCase();
+      if (status.contains('scheduled') && !status.contains('rescheduled')) scheduled++;
+      else if (status.contains('completed')) completed++;
+      else if (status.contains('cancel')) cancelled++;
+      else if (status.contains('rescheduled')) rescheduled++;
+      else if (status.contains('missed')) missed++;
+    }
+
+    _countsMap = {
+      'ALL': meetings.length,
+      'SCHEDULED': scheduled,
+      'COMPLETED': completed,
+      'CANCELLED': cancelled,
+      'RESCHEDULED': rescheduled,
+      'MISSED': missed,
+    };
+  }
+
   Future<void> _checkMissedMeetings() async {
     try {
       await _meetingService.checkAndUpdateMissedMeetings();
@@ -363,7 +390,7 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
                   },
                   child: _buildMeetingTypeContainer(
                     isActive: index == _selectedTypeIndex,
-                    type: _meetingTypes[index],
+                    type: "${_meetingTypes[index]} (${_countsMap[_meetingTypes[index]] ?? 0})",
                   ),
                 ),
               ),
@@ -592,6 +619,7 @@ class _MeetingScheduleUserPageState extends State<MeetingScheduleUserPage>
         _isLoading = false;
         totalItems = filteredForTab.length;
         hasMoreData = false; // We loaded all relevant meetings at once
+        _calculateCounts(filteredForTab);
       });
 
       // Load associated data and then apply current type filters

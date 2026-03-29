@@ -8,6 +8,7 @@ import 'package:inhabit_realties/pages/widgets/listTile.dart';
 import 'package:inhabit_realties/pages/widgets/loader.dart';
 import 'package:inhabit_realties/controllers/file/userProfilePictureController.dart';
 import 'package:inhabit_realties/controllers/role/roleController.dart';
+import 'package:inhabit_realties/services/meeting_schedule_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 
@@ -27,11 +28,27 @@ class _AppDrawerState extends State<AppDrawer> {
   bool isImageLoading = false;
   final UserProfilePictureController _profilePictureController =
       UserProfilePictureController();
+  final MeetingScheduleService _meetingService = MeetingScheduleService();
+  Map<String, dynamic> meetingCounts = {};
 
   @override
   void initState() {
     super.initState();
     _loadUserData();
+    _loadMeetingCounts();
+  }
+
+  Future<void> _loadMeetingCounts() async {
+    try {
+      final counts = await _meetingService.getMeetingCounts();
+      if (mounted) {
+        setState(() {
+          meetingCounts = counts;
+        });
+      }
+    } catch (e) {
+      // Handle error silently
+    }
   }
 
   Future<void> _loadUserData() async {
@@ -226,6 +243,8 @@ class _AppDrawerState extends State<AppDrawer> {
                           icon: item['icon'],
                           title: item['title'],
                         ),
+
+
                         if (isLogout || index == filteredMenuItems.length - 1)
                           const SizedBox(height: 8)
                         else if (index == 6) // Add divider after Meetings

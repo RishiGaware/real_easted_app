@@ -410,7 +410,8 @@ class _RegisterPageState extends State<RegisterPage> {
             centerTitle: true,
           ),
           body: SafeArea(
-            child: Form(
+            child: SelectionArea(
+              child: Form(
               key: _formKey,
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
@@ -434,6 +435,9 @@ class _RegisterPageState extends State<RegisterPage> {
             ),
           ),
         ),
+      ),
+
+
         if (isLoading)
           Container(
             color: Colors.black.withOpacity(0.3),

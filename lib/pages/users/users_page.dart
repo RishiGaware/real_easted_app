@@ -71,16 +71,17 @@ class _UsersPageState extends State<UsersPage>
     );
 
     roles.add(
-      RolesModel(
-        id: '0',
-        name: 'ALL',
-        description: 'All types',
-        createdByUserId: '0',
-        updatedByUserId: '0',
-        published: true,
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      ),
+        RolesModel(
+          id: '0',
+          name: 'ALL',
+          description: 'All types',
+          createdByUserId: '0',
+          updatedByUserId: '0',
+          published: true,
+          userCount: 0, // Will be updated
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
     );
 
     // Add scroll listener for pagination
@@ -255,7 +256,25 @@ class _UsersPageState extends State<UsersPage>
           totalCount = results[0]['count'] ?? 0;
           publishedCount = results[1]['count'] ?? 0;
           unpublishedCount = results[2]['count'] ?? 0;
+          
+          // Update the selected role's count if it's not the 'ALL' role
+          if (roles.isNotEmpty && _roleIndex >= 0 && _roleIndex < roles.length) {
+            final selectedRole = roles[_roleIndex];
+            roles[_roleIndex] = RolesModel(
+              id: selectedRole.id,
+              name: selectedRole.name,
+              description: selectedRole.description,
+              createdByUserId: selectedRole.createdByUserId,
+              updatedByUserId: selectedRole.updatedByUserId,
+              published: selectedRole.published,
+              userCount: results[0]['count'] ?? 0,
+              createdAt: selectedRole.createdAt,
+              updatedAt: selectedRole.updatedAt,
+            );
+          }
+          
           isStatsLoading = false;
+
         });
       }
     } catch (e) {
@@ -282,6 +301,7 @@ class _UsersPageState extends State<UsersPage>
                 createdByUserId: '0',
                 updatedByUserId: '0',
                 published: true,
+                userCount: totalCount,
                 createdAt: DateTime.now(),
                 updatedAt: DateTime.now(),
               )
@@ -424,6 +444,7 @@ class _UsersPageState extends State<UsersPage>
                 role: roles[index].name,
               ),
             ),
+
           );
         },
       ),
@@ -554,17 +575,39 @@ class _UsersPageState extends State<UsersPage>
   }
 
   Widget _buildSearchBar() {
+    final selectedRoleName = roles.isNotEmpty && _roleIndex >= 0 && _roleIndex < roles.length 
+        ? roles[_roleIndex].name : 'ALL';
+    final selectedRoleCount = roles.isNotEmpty && _roleIndex >= 0 && _roleIndex < roles.length 
+        ? roles[_roleIndex].userCount : totalCount;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-      child: AppSearchBar(
-        controller: _searchController,
-        onChanged: _handleSearch,
-        hintText: 'Search users...',
-        onClear: () => _handleSearch(''),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 12),
+            child: Text(
+              "$selectedRoleCount $selectedRoleName",
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ),
+
+          AppSearchBar(
+            controller: _searchController,
+            onChanged: _handleSearch,
+            hintText: 'Search users...',
+            onClear: () => _handleSearch(''),
+          ),
+        ],
       ),
     );
   }
+
 
   Widget _buildUsersList(BuildContext context) {
     if (filteredUsers.isEmpty) {

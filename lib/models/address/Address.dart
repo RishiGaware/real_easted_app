@@ -52,7 +52,6 @@ class Address {
   /// Serialize to JSON
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
       'street': street,
       'area': area,
       'city': city,
@@ -112,6 +111,6 @@ class Location {
 
   /// Serialize to JSON
   Map<String, dynamic> toJson() {
-    return {'id': id, 'lat': lat, 'lng': lng};
+    return {'lat': lat, 'lng': lng};
   }
 }

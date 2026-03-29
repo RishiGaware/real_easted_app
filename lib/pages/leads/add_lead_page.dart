@@ -582,11 +582,6 @@ class _AddLeadPageState extends State<AddLeadPage> {
                   child: TextFormField(
                     controller: _leadUserSearchController,
                     enableInteractiveSelection: true,
-                    contextMenuBuilder: (context, editableTextState) {
-                      return AdaptiveTextSelectionToolbar.editableText(
-                        editableTextState: editableTextState,
-                      );
-                    },
                     decoration: const InputDecoration(
                       isDense: true,
                       contentPadding: _dropdownContentPadding,
@@ -664,11 +659,6 @@ class _AddLeadPageState extends State<AddLeadPage> {
                   child: TextFormField(
                     controller: _interestedPropertySearchController,
                     enableInteractiveSelection: true,
-                    contextMenuBuilder: (context, editableTextState) {
-                      return AdaptiveTextSelectionToolbar.editableText(
-                        editableTextState: editableTextState,
-                      );
-                    },
                     decoration: const InputDecoration(
                       isDense: true,
                       contentPadding: _dropdownContentPadding,
@@ -1060,11 +1050,6 @@ class _AddLeadPageState extends State<AddLeadPage> {
               maxLines: null,
               controller: _assignedToUserSearchController,
               enableInteractiveSelection: true,
-              contextMenuBuilder: (context, editableTextState) {
-                return AdaptiveTextSelectionToolbar.editableText(
-                  editableTextState: editableTextState,
-                );
-              },
               decoration: InputDecoration(
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(

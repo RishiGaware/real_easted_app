@@ -8,6 +8,7 @@ import '../widgets/appSnackBar.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:inhabit_realties/pages/properties/widgets/property_image_display.dart';
+import 'package:inhabit_realties/pages/meetingSchedule/widgets/meeting_type_container.dart';
 import 'dart:async';
 
 class MeetingScheduleAdminPage extends StatefulWidget {
@@ -34,6 +35,18 @@ class _MeetingScheduleAdminPageState extends State<MeetingScheduleAdminPage>
   // Cache for user and property details
   Map<String, Map<String, dynamic>> _userCache = {};
   Map<String, Map<String, dynamic>> _propertyCache = {};
+  Map<String, dynamic> _countsMap = {};
+
+  // Meeting type filter
+  final List<String> _meetingTypes = [
+    'ALL',
+    'SCHEDULED',
+    'COMPLETED',
+    'CANCELLED',
+    'RESCHEDULED',
+    'MISSED'
+  ];
+  int _selectedTypeIndex = 0;
 
   // Animation controllers
   late AnimationController _animationController;
@@ -121,6 +134,10 @@ class _MeetingScheduleAdminPageState extends State<MeetingScheduleAdminPage>
       setState(() {
         _meetings = meetings;
         _isLoading = false;
+        // In a real app, 'counts' would come from the API response
+        // for getAllMeetings, but the service only returns the list.
+        // We can calculate them manually for the UI.
+        _calculateCounts(meetings);
       });
 
       _applyFilters();
@@ -195,9 +212,47 @@ class _MeetingScheduleAdminPageState extends State<MeetingScheduleAdminPage>
     }
   }
 
+  void _calculateCounts(List<MeetingSchedule> meetings) {
+    int scheduled = 0;
+    int completed = 0;
+    int cancelled = 0;
+    int rescheduled = 0;
+    int missed = 0;
+
+    for (var m in meetings) {
+      String status = m.getStatusName().toLowerCase();
+      if (status.contains('scheduled') && !status.contains('rescheduled')) scheduled++;
+      else if (status.contains('completed')) completed++;
+      else if (status.contains('cancel')) cancelled++;
+      else if (status.contains('rescheduled')) rescheduled++;
+      else if (status.contains('missed')) missed++;
+    }
+
+    _countsMap = {
+      'ALL': meetings.length,
+      'SCHEDULED': scheduled,
+      'COMPLETED': completed,
+      'CANCELLED': cancelled,
+      'RESCHEDULED': rescheduled,
+      'MISSED': missed,
+    };
+  }
+
   void _applyFilters() {
     setState(() {
       List<MeetingSchedule> filtered = _meetings;
+
+      // Apply Status Filter
+      if (_selectedTypeIndex != 0) {
+        final selectedType = _meetingTypes[_selectedTypeIndex];
+        filtered = filtered.where((m) {
+          String status = m.getStatusName().toUpperCase();
+          if (selectedType == 'SCHEDULED') {
+             return status.contains('SCHEDULED') && !status.contains('RESCHEDULED');
+          }
+          return status.contains(selectedType);
+        }).toList();
+      }
 
       // Apply Search Filter
       if (_searchQuery.isNotEmpty) {
@@ -407,7 +462,37 @@ class _MeetingScheduleAdminPageState extends State<MeetingScheduleAdminPage>
                           ],
                         ),
                       ),
-                      
+
+                      SizedBox(
+                        height: 65,
+                        child: SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: Row(
+                              children: List.generate(
+                                _meetingTypes.length,
+                                (index) => Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 12),
+                                  child: InkWell(
+                                    onTap: () {
+                                      setState(() {
+                                        _selectedTypeIndex = index;
+                                        _applyFilters();
+                                      });
+                                    },
+                                    child: MeetingTypeContainer(
+                                      isActive: index == _selectedTypeIndex,
+                                      type: "${_meetingTypes[index]} (${_countsMap[_meetingTypes[index]] ?? 0})",
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
                       // Meetings list
                       Expanded(
                         child: _filteredMeetings.isEmpty

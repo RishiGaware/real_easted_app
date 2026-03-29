@@ -7,10 +7,12 @@ import 'package:inhabit_realties/pages/widgets/appSpinner.dart';
 
 class LocationPickerPage extends StatefulWidget {
   final LatLng? initialLocation;
+  final String? initialAddress;
 
   const LocationPickerPage({
     Key? key,
     this.initialLocation,
+    this.initialAddress,
   }) : super(key: key);
 
   @override
@@ -29,6 +31,7 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
   }
 
   Future<void> _initializeLocation() async {
+    // 1. Check if we have an explicit initial location
     if (widget.initialLocation != null) {
       setState(() {
         _selectedLocation = widget.initialLocation;
@@ -37,6 +40,7 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
       return;
     }
 
+    // 2. Try to get current GPS location
     try {
       final position = await MapService.getCurrentLocation();
       if (position != null) {
@@ -44,18 +48,34 @@ class _LocationPickerPageState extends State<LocationPickerPage> {
           _selectedLocation = LatLng(position.latitude, position.longitude);
           _isLoading = false;
         });
-      } else {
-        setState(() {
-          _selectedLocation = const LatLng(20.5937, 78.9629); // Default to India
-          _isLoading = false;
-        });
+        return;
       }
     } catch (e) {
-      setState(() {
-        _selectedLocation = const LatLng(20.5937, 78.9629);
-        _isLoading = false;
-      });
+      // Continue to next fallback
     }
+
+    // 3. Try to geocode the initial address if provided
+    if (widget.initialAddress != null && widget.initialAddress!.isNotEmpty) {
+      try {
+        final location = await MapService.getCoordinatesFromAddressString(
+            widget.initialAddress!);
+        if (location != null) {
+          setState(() {
+            _selectedLocation = location;
+            _isLoading = false;
+          });
+          return;
+        }
+      } catch (e) {
+        // Continue to next fallback
+      }
+    }
+
+    // 4. Ultimate fallback to India (or Maharashtra area as user previously saw)
+    setState(() {
+      _selectedLocation = const LatLng(19.0760, 72.8777); // Default to Mumbai as a better fallback
+      _isLoading = false;
+    });
   }
 
   void _handleTap(TapPosition tapPosition, LatLng latLng) {

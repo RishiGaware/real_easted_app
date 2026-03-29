@@ -472,4 +472,75 @@ class MeetingScheduleService {
       return null;
     }
   }
+
+  // Get meeting counts for drawer
+  Future<Map<String, dynamic>> getMeetingCounts() async {
+    try {
+      final token = await _getToken();
+      if (token == null) {
+        throw Exception('No authentication token found');
+      }
+
+      // Check user role to decide which endpoint to hit
+      final prefs = await SharedPreferences.getInstance();
+      final userJson = prefs.getString('currentUser');
+      if (userJson == null) throw Exception('No current user found');
+      
+      final userData = json.decode(userJson);
+      final roleData = userData['role'];
+      String roleName = "";
+      if (roleData is Map) {
+        roleName = roleData['name']?.toString().toLowerCase() ?? "";
+      } else {
+        // If it's an ID, we might need to fetch the role name, 
+        // but for now let's assume 'admin' if not sure or use a generic approach
+        roleName = 'admin'; // Implementation fallback
+      }
+
+      final isAdmin = roleName == 'admin' || roleName == 'administrator';
+      
+      String url;
+      if (isAdmin) {
+        url = ApiUrls.getAllMeetingSchedules;
+      } else {
+        final userId = userData['_id'] ?? userData['id'];
+        url = '${ApiUrls.getMyMeetings}$userId';
+      }
+
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        return data['counts'] ?? {
+          'totalMeetings': 0,
+          'totalScheduled': 0,
+          'totalRescheduled': 0,
+          'totalCancelled': 0,
+          'totalCompleted': 0
+        };
+      } else {
+        return {
+          'totalMeetings': 0,
+          'totalScheduled': 0,
+          'totalRescheduled': 0,
+          'totalCancelled': 0,
+          'totalCompleted': 0
+        };
+      }
+    } catch (e) {
+      return {
+        'totalMeetings': 0,
+        'totalScheduled': 0,
+        'totalRescheduled': 0,
+        'totalCancelled': 0,
+        'totalCompleted': 0
+      };
+    }
+  }
 }

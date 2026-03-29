@@ -2,12 +2,14 @@ class Features {
   final int bedRooms;
   final int bathRooms;
   final double areaInSquarFoot;
+  final int? bhk;
   final List<String> amenities;
 
   Features({
     required this.bedRooms,
     required this.bathRooms,
     required this.areaInSquarFoot,
+    this.bhk,
     required this.amenities,
   });
 
@@ -17,6 +19,7 @@ class Features {
         bedRooms: json['bedRooms'] ?? 0,
         bathRooms: json['bathRooms'] ?? 0,
         areaInSquarFoot: (json['areaInSquarFoot'] ?? 0).toDouble(),
+        bhk: json['bhk'],
         amenities: List<String>.from(json['amenities'] ?? []),
       );
     } catch (e) {
@@ -25,6 +28,7 @@ class Features {
         bedRooms: 0,
         bathRooms: 0,
         areaInSquarFoot: 0.0,
+        bhk: null,
         amenities: [],
       );
     }
@@ -35,6 +39,7 @@ class Features {
       'bedRooms': bedRooms,
       'bathRooms': bathRooms,
       'areaInSquarFoot': areaInSquarFoot,
+      'bhk': bhk,
       'amenities': amenities,
     };
   }

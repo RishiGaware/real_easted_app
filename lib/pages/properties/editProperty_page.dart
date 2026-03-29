@@ -1247,11 +1247,23 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
                     );
                   }
 
+                  final String? city = _city.text.isNotEmpty ? _city.text : null;
+                  final String? state = _state.text.isNotEmpty ? _state.text : null;
+                  final String? country = _country.text.isNotEmpty ? _country.text : null;
+                  
+                  final List<String> addressParts = [];
+                  if (city != null) addressParts.add(city);
+                  if (state != null) addressParts.add(state);
+                  if (country != null) addressParts.add(country);
+                  
+                  final String? initialAddress = addressParts.isNotEmpty ? addressParts.join(', ') : null;
+
                   final LatLng? result = await Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => LocationPickerPage(
                         initialLocation: initialLocation,
+                        initialAddress: initialAddress,
                       ),
                     ),
                   );
@@ -1919,8 +1931,9 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
                     ],
                   ),
                 )
-              : Form(
-                  key: _formKey,
+              : SelectionArea(
+                  child: Form(
+                      key: _formKey,
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
@@ -1969,8 +1982,10 @@ class _EditPropertyPageState extends State<EditPropertyPage> {
                     ),
                   ),
                 ),
+              ),
     );
   }
+
 
   /// Builds the amenities multi-select widget
   Widget _buildAmenitiesSelector() {
