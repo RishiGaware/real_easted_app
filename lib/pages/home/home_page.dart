@@ -40,6 +40,7 @@ class _HomePageState extends State<HomePage>
   late Animation<Offset> _slideAnimation;
   late DashboardController _dashboardController;
   bool _isRoleInitialized = false;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
@@ -71,6 +72,15 @@ class _HomePageState extends State<HomePage>
       setState(() {
         _isRoleInitialized = true;
       });
+
+      // Automatically open drawer for Executive users
+      if (RoleUtils.isExecutive()) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _scaffoldKey.currentState?.openDrawer();
+          }
+        });
+      }
     }
   }
 
@@ -684,6 +694,7 @@ class _HomePageState extends State<HomePage>
             isDark ? AppColors.darkWhiteText : AppColors.lightDarkText;
 
         return Scaffold(
+          key: _scaffoldKey,
           backgroundColor: backgroundColor,
           appBar: AppAppbar(onToggleTheme: widget.onToggleTheme),
           body: RefreshIndicator(
@@ -830,20 +841,14 @@ class _HomePageState extends State<HomePage>
                                     Navigator.pushNamed(
                                         context, '/notifications');
                                   },
-                                  child: Consumer<NotificationController>(
-                                    builder: (context, notificationController,
-                                        child) {
-                                      return _buildStatCard(
-                                        CupertinoIcons.bell,
-                                        'Today\'s Notifications',
-                                        notificationController
-                                            .todayNotificationsCount
-                                            .toString(),
-                                        AppColors.brandPrimary,
-                                        false,
-                                        subtitle: 'New notifications',
-                                      );
-                                    },
+                                  child: _buildStatCard(
+                                    CupertinoIcons.bell,
+                                    'Today\'s Notifications',
+                                    _dashboardController.todayNotificationsCount
+                                        .toString(),
+                                    AppColors.brandPrimary,
+                                    _dashboardController.isLoading,
+                                    subtitle: 'New notifications',
                                   ),
                                 ),
                                 // Today's Inquiries

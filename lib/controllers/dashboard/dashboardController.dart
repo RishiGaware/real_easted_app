@@ -46,6 +46,7 @@ class DashboardController extends ChangeNotifier {
   // Schedule count getters
   int get todaySchedulesCount => _dashboardData['todaySchedules'] ?? 0;
   int get tomorrowSchedulesCount => _dashboardData['tomorrowSchedules'] ?? 0;
+  int get todayNotificationsCount => _dashboardData['todayNotificationsCount'] ?? 0;
 
   // Test method to check token and SharedPreferences
   Future<void> debugTokenAndPreferences() async {

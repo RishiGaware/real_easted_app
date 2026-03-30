@@ -1,6 +1,7 @@
 // ignore_for_file: use_build_context_synchronously
 
 import 'dart:async';
+import 'package:inhabit_realties/constants/role_utils.dart';
 import 'dart:convert';
 
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
@@ -40,6 +41,7 @@ class _SplashPageState extends State<SplashPage> {
 
   Future<void> _initializeApp() async {
     try {
+      await RoleUtils.initializeCurrentUser();
       // Start minimum display timer immediately
       final displayCompleter = Completer<void>();
       _navigationTimer = Timer(const Duration(seconds: 2), () {

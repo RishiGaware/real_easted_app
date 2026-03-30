@@ -108,6 +108,9 @@ class AuthController {
         final roleData = await roleController.getRoleById(roleId);
         if (roleData != null && roleData['data'] != null) {
           final roleName = roleData['data']['name'];
+          if (roleName != null) {
+            await prefs.setString('role', roleName);
+          }
           if (roleName?.toLowerCase() == 'user') {
             isUserRole = true;
           }

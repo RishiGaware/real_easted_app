@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:awesome_snackbar_content/awesome_snackbar_content.dart';
 import 'package:inhabit_realties/constants/contants.dart';
+import 'package:inhabit_realties/constants/role_utils.dart';
 import 'package:inhabit_realties/constants/initalAssigner.dart';
 import 'package:inhabit_realties/controllers/auth/authController.dart';
 import 'package:inhabit_realties/controllers/role/roleController.dart';
@@ -83,6 +84,7 @@ class _EditUserPageState extends State<EditUserPage> {
 
   Future<void> _loadInitialData() async {
     setState(() => isLoading = true);
+    await RoleUtils.initializeCurrentUser();
     await Future.wait([getAllRoles(), setDetails()]);
     if (user != null) {
       await getUserAddresses(user!.id);
@@ -250,7 +252,8 @@ class _EditUserPageState extends State<EditUserPage> {
           response['message'] ?? 'User updated successfully',
           ContentType.success,
         );
-        Navigator.pushReplacementNamed(context, '/users');
+        final String route = RoleUtils.isExecutive() ? '/customers' : '/users';
+        Navigator.pushReplacementNamed(context, route);
       } else {
         AppSnackBar.showSnackBar(
           context,
@@ -327,7 +330,7 @@ class _EditUserPageState extends State<EditUserPage> {
                   ),
                 );
               }).toList(),
-              onChanged: isLoading
+              onChanged: (isLoading || RoleUtils.isExecutive())
                   ? null
                   : (value) {
                       if (value != null) {

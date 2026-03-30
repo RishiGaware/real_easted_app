@@ -543,6 +543,7 @@ class _AllPurchaseBookingsPageState extends State<AllPurchaseBookingsPage> {
       ),
       body: Column(
         children: [
+          _buildSummarySection(context, isDark, textColor),
           // Search and Filter Section
           Container(
             padding: const EdgeInsets.all(16),
@@ -708,6 +709,107 @@ class _AllPurchaseBookingsPageState extends State<AllPurchaseBookingsPage> {
                               },
                             ),
                           ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummarySection(BuildContext context, bool isDark, Color textColor) {
+    if (_bookings.isEmpty) return const SizedBox.shrink();
+
+    // Stats calculation
+    final total = _bookings.length;
+    final pending = _bookings.where((b) => b.bookingStatus.toUpperCase() == 'PENDING').length;
+    final confirmed = _bookings.where((b) => b.bookingStatus.toUpperCase() == 'CONFIRMED').length;
+    final cancelled = _bookings.where((b) => b.bookingStatus.toUpperCase() == 'CANCELLED').length;
+    final completed = _bookings.where((b) => b.bookingStatus.toUpperCase() == 'COMPLETED').length;
+
+    // Property types (only include types with count > 0)
+    final Map<String, int> propertyTypes = {};
+    for (var b in _bookings) {
+      final type = b.propertyType?.trim() ?? 
+                   (b.property?['propertyType']?.toString() ?? 
+                   (b.property?['category']?.toString() ?? 'Other'));
+      if (type.isNotEmpty) {
+        propertyTypes[type] = (propertyTypes[type] ?? 0) + 1;
+      }
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Row(
+          children: [
+            _buildSummaryCard('Total', total.toString(), Icons.all_inbox, Colors.blue, isDark),
+            _buildSummaryCard('Pending', pending.toString(), Icons.timer_outlined, Colors.orange, isDark),
+            _buildSummaryCard('Confirmed', confirmed.toString(), Icons.check_circle_outline, Colors.green, isDark),
+            _buildSummaryCard('Cancelled', cancelled.toString(), Icons.cancel_outlined, Colors.red, isDark),
+            _buildSummaryCard('Completed', completed.toString(), Icons.done_all, Colors.indigo, isDark),
+            ...propertyTypes.entries.map((e) => 
+               _buildSummaryCard(e.key, e.value.toString(), _getIconForPropertyType(e.key), Colors.teal, isDark)
+            ).toList(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  IconData _getIconForPropertyType(String type) {
+    switch (type.toLowerCase()) {
+      case 'flat': return Icons.apartment;
+      case 'plot': return Icons.landscape;
+      case 'villa': return Icons.holiday_village;
+      case 'house': return Icons.home;
+      default: return Icons.home_work_outlined;
+    }
+  }
+
+  Widget _buildSummaryCard(String label, String value, IconData icon, Color color, bool isDark) {
+    final backgroundColor = isDark ? AppColors.darkCardBackground : Colors.white;
+    final labelColor = isDark ? Colors.white70 : Colors.black54;
+    final valueColor = isDark ? Colors.white : Colors.black87;
+
+    return Container(
+      width: 110,
+      margin: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: valueColor,
+            ),
+          ),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: labelColor,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

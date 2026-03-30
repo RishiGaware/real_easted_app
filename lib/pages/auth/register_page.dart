@@ -10,6 +10,7 @@ import 'package:inhabit_realties/models/role/RolesModel.dart';
 import 'package:inhabit_realties/pages/widgets/appSnackBar.dart';
 import 'package:inhabit_realties/pages/widgets/formTextField.dart';
 import 'package:inhabit_realties/providers/register_page_provider.dart';
+import 'package:inhabit_realties/constants/role_utils.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -61,7 +62,12 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   void initState() {
     super.initState();
-    _loadRoles();
+    _initializeApp();
+  }
+
+  Future<void> _initializeApp() async {
+    await RoleUtils.initializeCurrentUser();
+    await _loadRoles();
   }
 
   Future<void> _loadRoles() async {
@@ -79,6 +85,14 @@ class _RegisterPageState extends State<RegisterPage> {
             roles = List<RolesModel>.from(
               data.map((item) => RolesModel.fromJson(item)),
             );
+
+            // Filter roles if the current user is an Executive
+            if (RoleUtils.isExecutive()) {
+              roles = roles.where((role) {
+                final roleName = role.name.toLowerCase();
+                return roleName == 'user';
+              }).toList();
+            }
           });
         }
       } else {
@@ -127,7 +141,8 @@ class _RegisterPageState extends State<RegisterPage> {
           RegisterPageProvider.registrationSuccess,
           ContentType.success,
         );
-        Navigator.pushReplacementNamed(context, '/users');
+        final route = RoleUtils.isExecutive() ? '/customers' : '/users';
+        Navigator.pushReplacementNamed(context, route);
       } else {
         AppSnackBar.showSnackBar(
           context,
