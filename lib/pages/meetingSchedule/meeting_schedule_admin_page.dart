@@ -10,6 +10,8 @@ import 'package:shimmer/shimmer.dart';
 import 'package:inhabit_realties/pages/properties/widgets/property_image_display.dart';
 import 'package:inhabit_realties/pages/meetingSchedule/widgets/meeting_type_container.dart';
 import 'dart:async';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class MeetingScheduleAdminPage extends StatefulWidget {
   const MeetingScheduleAdminPage({super.key});
@@ -26,6 +28,7 @@ class _MeetingScheduleAdminPageState extends State<MeetingScheduleAdminPage>
   List<MeetingSchedule> _filteredMeetings = [];
   bool _isLoading = true;
   String? _error;
+  String _userRole = 'admin'; // Default to admin
 
   // Search and Sort
   String _searchQuery = '';
@@ -123,7 +126,21 @@ class _MeetingScheduleAdminPageState extends State<MeetingScheduleAdminPage>
         _error = null;
       });
 
-      final meetings = await _meetingService.getAllMeetings();
+      // Get user role to determine which endpoint to use
+      final prefs = await SharedPreferences.getInstance();
+      final userJson = prefs.getString('currentUser');
+      if (userJson != null) {
+        final userData = json.decode(userJson);
+        _userRole = (userData['role'] ?? 'admin').toString().toLowerCase();
+      }
+
+      List<MeetingSchedule> meetings;
+      if (_userRole == 'admin' || _userRole == 'executive') {
+        meetings = await _meetingService.getAllMeetings();
+      } else {
+        // For Sales and other roles, only get their own meetings
+        meetings = await _meetingService.getMyMeetings();
+      }
 
       // Check and update missed meetings
       await _meetingService.checkAndUpdateMissedMeetings(meetings: meetings);
@@ -334,7 +351,9 @@ class _MeetingScheduleAdminPageState extends State<MeetingScheduleAdminPage>
         foregroundColor:
             isDark ? AppColors.darkWhiteText : AppColors.lightDarkText,
         title: Text(
-          'All Meeting Schedules',
+          _userRole == 'admin' || _userRole == 'executive' 
+              ? 'All Meeting Schedules' 
+              : 'My Meeting Schedules',
           style: TextStyle(
             fontWeight: FontWeight.w600,
             color: isDark ? AppColors.darkWhiteText : AppColors.lightDarkText,
@@ -613,7 +632,9 @@ class _MeetingScheduleAdminPageState extends State<MeetingScheduleAdminPage>
             ),
             const SizedBox(height: 24),
             Text(
-              'No Meetings Scheduled',
+              _userRole == 'admin' || _userRole == 'executive'
+                  ? 'No Meetings Scheduled'
+                  : 'You have no meetings',
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,

@@ -14,6 +14,10 @@ class NotificationController extends ChangeNotifier {
 
   Timer? _pollingTimer;
   final Set<String> _alertedNotificationIds = {};
+  
+  // Stream for notifying other parts of the app to refresh (e.g., Dashboard)
+  final StreamController<void> _refreshStreamController = StreamController<void>.broadcast();
+  Stream<void> get refreshStream => _refreshStreamController.stream;
 
   // Constructor to initialize data
   NotificationController() {
@@ -29,6 +33,7 @@ class NotificationController extends ChangeNotifier {
   @override
   void dispose() {
     _pollingTimer?.cancel();
+    _refreshStreamController.close();
     super.dispose();
   }
 
@@ -179,6 +184,8 @@ class NotificationController extends ChangeNotifier {
         if (hasNewAlerts) {
           // Update the unread count in UI
           getUnreadCount();
+          // Notify listeners to refresh dashboard/other pages
+          _refreshStreamController.add(null);
         }
       }
     } catch (e) {

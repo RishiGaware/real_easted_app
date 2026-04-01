@@ -78,14 +78,13 @@ class MeetingSchedule {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
       'title': title,
       'description': description,
       'meetingDate': meetingDate,
       'startTime': startTime,
       'endTime': endTime,
       'duration': duration,
-      'status': status,
+      'status': status is Map ? (status['_id'] ?? status['id']) : status,
       'scheduledByUserId': scheduledByUserId,
       'customerId': customerId,
       'propertyId': propertyId,
@@ -93,8 +92,6 @@ class MeetingSchedule {
       'createdByUserId': createdByUserId,
       'updatedByUserId': updatedByUserId,
       'published': published,
-      'createdAt': createdAt,
-      'updatedAt': updatedAt,
     };
   }
 

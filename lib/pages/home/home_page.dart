@@ -22,6 +22,7 @@ import 'package:inhabit_realties/services/meeting_schedule_service.dart';
 import 'package:inhabit_realties/pages/meetingSchedule/meeting_details_page.dart';
 import 'package:inhabit_realties/models/meeting_schedule_model.dart';
 import 'package:inhabit_realties/constants/role_utils.dart';
+import 'dart:async';
 
 class HomePage extends StatefulWidget {
   final VoidCallback onToggleTheme;
@@ -41,6 +42,9 @@ class _HomePageState extends State<HomePage>
   late DashboardController _dashboardController;
   bool _isRoleInitialized = false;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  
+  // Stream subscription for notifications
+  StreamSubscription<void>? _notificationSubscription;
 
   @override
   void initState() {
@@ -62,6 +66,13 @@ class _HomePageState extends State<HomePage>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         context.read<LeadsController>().loadLeads();
+        
+        // Listen for notification-triggered refreshes
+        _notificationSubscription = context.read<NotificationController>().refreshStream.listen((_) {
+          if (mounted) {
+            _refreshDashboard();
+          }
+        });
       }
     });
   }
@@ -133,6 +144,7 @@ class _HomePageState extends State<HomePage>
   @override
   void dispose() {
     _animationController.dispose();
+    _notificationSubscription?.cancel();
     super.dispose();
   }
 

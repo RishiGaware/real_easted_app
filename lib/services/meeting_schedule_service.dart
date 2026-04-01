@@ -243,8 +243,22 @@ class MeetingScheduleService {
         final missedStatusId = await _getMissedStatusId();
         
         if (missedStatusId != null) {
+          // Extract the status ID correctly even if it's currently populated as a Map
+          final String currentStatusId = meeting.status is Map 
+              ? (meeting.status['_id'] ?? meeting.status['id'] ?? '')
+              : meeting.status.toString();
+              
           await updateMeeting(meeting.id, {
-            'status': missedStatusId,
+            'title': meeting.title,
+            'description': meeting.description,
+            'meetingDate': meeting.meetingDate,
+            'startTime': meeting.startTime,
+            'endTime': meeting.endTime,
+            'duration': meeting.duration,
+            'status': missedStatusId, // The new "missed" status
+            'customerId': meeting.customerId,
+            'propertyId': meeting.propertyId,
+            'notes': meeting.notes,
             'updatedByUserId': meeting.updatedByUserId,
           });
         }
